@@ -12,7 +12,7 @@ const HomePage = ({ products, onProductClick, user }) => (
         </div>
       </div>
     </div>
-    <div className="grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-1 gap-4 mb-16">
       {products.map((p) => (
         <ProductCard key={p.id} product={p} onClick={() => onProductClick(p)} />
       ))}
