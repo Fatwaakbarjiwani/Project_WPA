@@ -22,12 +22,12 @@ function InstallPrompt() {
   if (!deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+    <div className="fixed bottom-6 right-0 flex justify-center z-50">
       <button
         className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce"
         onClick={handleInstall}
       >
-        Install Aplikasi
+        Download
       </button>
     </div>
   );
