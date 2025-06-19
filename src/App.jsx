@@ -9,6 +9,7 @@ import ProfilePage from "./pages/ProfilePage";
 import productsData from "./data/products";
 import userData from "./data/user";
 import InstallPrompt from "./components/InstallPrompt";
+import InstallModal from "./components/InstallModal";
 
 function App() {
   const [page, setPage] = useState("home");
@@ -154,7 +155,8 @@ function App() {
         {page === "profile" && <ProfilePage user={user} onBack={handleBack} />}
       </main>
       <BottomNav page={page === "product" ? "home" : page} setPage={setPage} />
-      <InstallPrompt />
+      {/* <InstallPrompt /> */}
+      <InstallModal />
     </div>
   );
 }
