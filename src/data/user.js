@@ -1,6 +1,6 @@
 const user = {
-  name: 'Rizky Ramadhan',
-  email: 'rizky@email.com',
+  name: 'Fatwa Akbar Jiwani',
+  email: 'akbar2003@email.com',
   phone: '08123456789',
   avatar: '',
 }
