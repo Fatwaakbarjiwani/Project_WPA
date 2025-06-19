@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 
+function isStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
 function InstallModal() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    if (isStandalone()) return; // Jangan tampilkan modal jika sudah install
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -24,7 +32,11 @@ function InstallModal() {
     }
   };
 
-  if (!showModal) return null;
+  const handleContinueWeb = () => {
+    setShowModal(false);
+  };
+
+  if (!showModal || isStandalone()) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -34,10 +46,16 @@ function InstallModal() {
           Agar lebih mudah diakses, install aplikasi ini di perangkat Anda.
         </p>
         <button
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition mb-2 w-full"
           onClick={handleInstall}
         >
           Install Sekarang
+        </button>
+        <button
+          className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition w-full"
+          onClick={handleContinueWeb}
+        >
+          Lanjutkan versi web
         </button>
       </div>
     </div>
