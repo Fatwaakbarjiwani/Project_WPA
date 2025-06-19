@@ -13,7 +13,7 @@ const navs = [
 ];
 
 const BottomNav = ({ page, setPage }) => (
-  <nav className="fixed bottom-0 w-full flex justify-around bg-white border-t border-gray-200 py-2">
+  <nav className="fixed bottom-0 w-full max-w-sm flex justify-around bg-white border-t border-gray-200 py-2">
     {navs.map(({ key, label, icon: Icon }) => (
       <button
         key={key}
