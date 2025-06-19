@@ -8,6 +8,7 @@ import CameraPage from "./pages/CameraPage";
 import ProfilePage from "./pages/ProfilePage";
 import productsData from "./data/products";
 import userData from "./data/user";
+import InstallPrompt from "./components/InstallPrompt";
 
 function App() {
   const [page, setPage] = useState("home");
@@ -153,6 +154,7 @@ function App() {
         {page === "profile" && <ProfilePage user={user} onBack={handleBack} />}
       </main>
       <BottomNav page={page === "product" ? "home" : page} setPage={setPage} />
+      <InstallPrompt />
     </div>
   );
 }
