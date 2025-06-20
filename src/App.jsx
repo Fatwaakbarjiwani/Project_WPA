@@ -112,7 +112,9 @@ function App() {
           });
           text += data + " ";
         }
-        const result = text.trim() || "NFC tag terbaca, tapi kosong";
+        const result =
+          text.trim() ||
+          (records.length === 0 ? "NFC tag terbaca, tapi kosong" : "");
         setNfcResult(result);
         setNfcHistory((prev) => [result, ...prev]);
         setNfcTagInfo({

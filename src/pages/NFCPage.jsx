@@ -58,35 +58,41 @@ const NFCPage = ({
             {nfcTagInfo.recordCount}
           </div>
         </div>
-        {nfcTagInfo.records.map((rec, i) => (
-          <div key={i} className="border-t pt-2 mt-2">
-            <div className="font-semibold mb-1">Record {i}</div>
-            <div className="text-xs">
-              <div>
-                <span className="font-medium">Record ID:</span> {rec.id}
-              </div>
-              <div>
-                <span className="font-medium">Record Type:</span>{" "}
-                {rec.recordType || "empty"}
-              </div>
-              <div>
-                <span className="font-medium">Media Type:</span>{" "}
-                {rec.mediaType || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Data Encoding:</span>{" "}
-                {rec.dataEncoding || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Data Size:</span> {rec.dataSize}{" "}
-                bytes
-              </div>
-              <div>
-                <span className="font-medium">Data:</span> {rec.data || "-"}
+        {nfcTagInfo.records.length === 0 ? (
+          <div className="text-xs text-yellow-700">
+            Tag kosong/tidak ada data NDEF.
+          </div>
+        ) : (
+          nfcTagInfo.records.map((rec, i) => (
+            <div key={i} className="border-t pt-2 mt-2">
+              <div className="font-semibold mb-1">Record {i}</div>
+              <div className="text-xs">
+                <div>
+                  <span className="font-medium">Record ID:</span> {rec.id}
+                </div>
+                <div>
+                  <span className="font-medium">Record Type:</span>{" "}
+                  {rec.recordType || "empty"}
+                </div>
+                <div>
+                  <span className="font-medium">Media Type:</span>{" "}
+                  {rec.mediaType || "-"}
+                </div>
+                <div>
+                  <span className="font-medium">Data Encoding:</span>{" "}
+                  {rec.dataEncoding || "-"}
+                </div>
+                <div>
+                  <span className="font-medium">Data Size:</span> {rec.dataSize}{" "}
+                  bytes
+                </div>
+                <div>
+                  <span className="font-medium">Data:</span> {rec.data || "-"}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     )}
     <div>
