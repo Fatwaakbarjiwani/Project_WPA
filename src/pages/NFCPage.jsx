@@ -50,13 +50,19 @@ const NFCPage = ({
         <div className="font-semibold mb-2">NFC Tag Info</div>
         <div className="flex flex-col gap-1 text-sm mb-2">
           <div>
-            <span className="font-medium">Serial Number:</span>{" "}
+            <span className="font-medium">Serial Number (Hex):</span>{" "}
             {nfcTagInfo.serialNumber}
             {nfcTagInfo.serialNumber === "-" && (
               <span className="text-xs text-yellow-700 ml-2">
                 Serial Number tidak tersedia untuk tag ini.
               </span>
             )}
+          </div>
+          <div>
+            <span className="font-medium">Serial Number (Desimal):</span>{" "}
+            {nfcTagInfo.serialNumber && nfcTagInfo.serialNumber !== "-"
+              ? parseInt(nfcTagInfo.serialNumber.replace(/:/g, ""), 16)
+              : "-"}
           </div>
           <div>
             <span className="font-medium">Record Count:</span>{" "}
