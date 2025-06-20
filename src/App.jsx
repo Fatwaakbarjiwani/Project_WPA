@@ -75,10 +75,24 @@ function App() {
   const handleScanNfc = async () => {
     setNfcResult("");
     setNfcReading(true);
+    if (!("NDEFReader" in window)) {
+      setNfcResult(
+        "Browser tidak mendukung Web NFC. Silakan gunakan Chrome di Android."
+      );
+      setNfcReading(false);
+      return;
+    }
     try {
       const ndef = new window.NDEFReader();
       await ndef.scan();
+      let timeoutId = setTimeout(() => {
+        setNfcResult(
+          "Tidak ada tag NFC yang terbaca. Silakan coba lagi dan pastikan tag didekatkan ke perangkat."
+        );
+        setNfcReading(false);
+      }, 10000); // 10 detik timeout
       ndef.onreading = (event) => {
+        clearTimeout(timeoutId);
         const decoder = new TextDecoder();
         let text = "";
         for (const record of event.message.records) {
@@ -90,11 +104,12 @@ function App() {
         setNfcReading(false);
       };
       ndef.onerror = (err) => {
-        setNfcResult("Gagal membaca NFC: " + err.message);
+        clearTimeout(timeoutId);
+        setNfcResult("Gagal membaca NFC: " + (err?.message || err));
         setNfcReading(false);
       };
     } catch (err) {
-      setNfcResult("Gagal memulai scan NFC: " + err.message);
+      setNfcResult("Gagal memulai scan NFC: " + (err?.message || err));
       setNfcReading(false);
     }
   };
