@@ -1,5 +1,5 @@
 const user = {
-  name: 'update123',
+  name: 'update11',
   email: 'akbar2003@email.com',
   phone: '08123456789',
   avatar: '',

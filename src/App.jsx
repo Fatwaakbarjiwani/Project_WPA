@@ -20,6 +20,7 @@ function App() {
   const [nfcHistory, setNfcHistory] = useState([]);
   const [nfcSupported, setNfcSupported] = useState(false);
   const [nfcReading, setNfcReading] = useState(false);
+  const [nfcTagInfo, setNfcTagInfo] = useState(null);
   const videoRef = useRef(null);
   const [cameraError, setCameraError] = useState("");
   const [user] = useState(userData);
@@ -75,6 +76,7 @@ function App() {
   const handleScanNfc = async () => {
     setNfcResult("");
     setNfcReading(true);
+    setNfcTagInfo(null);
     if (!("NDEFReader" in window)) {
       setNfcResult(
         "Browser tidak mendukung Web NFC. Silakan gunakan Chrome di Android."
@@ -95,12 +97,29 @@ function App() {
         clearTimeout(timeoutId);
         const decoder = new TextDecoder();
         let text = "";
-        for (const record of event.message.records) {
-          text += decoder.decode(record.data) + " ";
+        let records = [];
+        for (const [i, record] of event.message.records.entries()) {
+          let recordType = record.recordType || "empty";
+          let mediaType = record.mediaType || "";
+          let data = decoder.decode(record.data);
+          records.push({
+            id: i,
+            recordType,
+            mediaType,
+            dataEncoding: record.encoding || "",
+            dataSize: record.data ? record.data.byteLength : 0,
+            data,
+          });
+          text += data + " ";
         }
         const result = text.trim() || "NFC tag terbaca, tapi kosong";
         setNfcResult(result);
         setNfcHistory((prev) => [result, ...prev]);
+        setNfcTagInfo({
+          serialNumber: event.serialNumber || "-",
+          recordCount: event.message.records.length,
+          records,
+        });
         setNfcReading(false);
       };
       ndef.onerror = (err) => {
@@ -154,6 +173,7 @@ function App() {
             nfcHistory={nfcHistory}
             nfcSupported={nfcSupported}
             nfcReading={nfcReading}
+            nfcTagInfo={nfcTagInfo}
           />
         )}
         {page === "camera" && (

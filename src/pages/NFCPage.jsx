@@ -5,6 +5,7 @@ const NFCPage = ({
   nfcHistory,
   nfcSupported,
   nfcReading,
+  nfcTagInfo,
 }) => (
   <div className="px-4 py-3">
     <button className="mb-3 text-blue-600 font-medium" onClick={onBack}>
@@ -43,6 +44,51 @@ const NFCPage = ({
         </div>
       )}
     </div>
+    {/* NFC Tag Info */}
+    {nfcTagInfo && (
+      <div className="border rounded-lg p-3 mb-4 bg-gray-50">
+        <div className="font-semibold mb-2">NFC Tag Info</div>
+        <div className="flex flex-col gap-1 text-sm mb-2">
+          <div>
+            <span className="font-medium">Serial Number:</span>{" "}
+            {nfcTagInfo.serialNumber}
+          </div>
+          <div>
+            <span className="font-medium">Record Count:</span>{" "}
+            {nfcTagInfo.recordCount}
+          </div>
+        </div>
+        {nfcTagInfo.records.map((rec, i) => (
+          <div key={i} className="border-t pt-2 mt-2">
+            <div className="font-semibold mb-1">Record {i}</div>
+            <div className="text-xs">
+              <div>
+                <span className="font-medium">Record ID:</span> {rec.id}
+              </div>
+              <div>
+                <span className="font-medium">Record Type:</span>{" "}
+                {rec.recordType || "empty"}
+              </div>
+              <div>
+                <span className="font-medium">Media Type:</span>{" "}
+                {rec.mediaType || "-"}
+              </div>
+              <div>
+                <span className="font-medium">Data Encoding:</span>{" "}
+                {rec.dataEncoding || "-"}
+              </div>
+              <div>
+                <span className="font-medium">Data Size:</span> {rec.dataSize}{" "}
+                bytes
+              </div>
+              <div>
+                <span className="font-medium">Data:</span> {rec.data || "-"}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
     <div>
       <div className="font-semibold mb-2">Riwayat Scan NFC</div>
       <ul className="text-sm text-gray-700">
