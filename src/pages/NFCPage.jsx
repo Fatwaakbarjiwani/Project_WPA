@@ -16,16 +16,33 @@ const NFCPage = ({
     )}
     {nfcSupported && (
       <button
-        className="bg-blue-600 text-white rounded-lg px-4 py-2 font-medium shadow hover:bg-blue-700 transition mb-4"
+        className="bg-blue-600 text-white rounded-lg px-4 py-2 font-medium shadow hover:bg-blue-700 transition mb-2"
         onClick={onScan}
         disabled={nfcReading}
       >
         {nfcReading ? "Scanning..." : "Mulai Scan NFC"}
       </button>
     )}
-    {nfcResult && (
-      <div className="mb-4 text-green-700 font-semibold">{nfcResult}</div>
-    )}
+    <div className="mb-4 min-h-6">
+      {nfcReading && (
+        <div className="text-blue-600 font-semibold">
+          Sedang scanning NFC...
+        </div>
+      )}
+      {nfcResult && (
+        <div
+          className={`mt-1 font-semibold ${
+            nfcResult.startsWith("Gagal") || nfcResult.startsWith("Browser")
+              ? "text-red-600"
+              : nfcResult.startsWith("Tidak ada")
+              ? "text-yellow-600"
+              : "text-green-700"
+          }`}
+        >
+          {nfcResult}
+        </div>
+      )}
+    </div>
     <div>
       <div className="font-semibold mb-2">Riwayat Scan NFC</div>
       <ul className="text-sm text-gray-700">
