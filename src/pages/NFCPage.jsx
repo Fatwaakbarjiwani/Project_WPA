@@ -52,6 +52,11 @@ const NFCPage = ({
           <div>
             <span className="font-medium">Serial Number:</span>{" "}
             {nfcTagInfo.serialNumber}
+            {nfcTagInfo.serialNumber === "-" && (
+              <span className="text-xs text-yellow-700 ml-2">
+                Serial Number tidak tersedia untuk tag ini.
+              </span>
+            )}
           </div>
           <div>
             <span className="font-medium">Record Count:</span>{" "}
