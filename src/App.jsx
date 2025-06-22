@@ -173,49 +173,98 @@ function App() {
     try {
       const ndef = new window.NDEFReader();
       await ndef.scan();
+
       let timeoutId = setTimeout(() => {
         setNfcResult(
           "Tidak ada tag NFC yang terbaca. Silakan coba lagi dan pastikan tag didekatkan ke perangkat."
         );
         setNfcReading(false);
       }, 10000); // 10 detik timeout
+
+      // Handle successful reading
       ndef.onreading = (event) => {
         clearTimeout(timeoutId);
+        console.log("NFC Tag detected:", event);
+
         const decoder = new TextDecoder();
         let text = "";
         let records = [];
-        for (const [i, record] of event.message.records.entries()) {
-          let recordType = record.recordType || "empty";
-          let mediaType = record.mediaType || "";
-          let data = decoder.decode(record.data);
-          records.push({
-            id: i,
-            recordType,
-            mediaType,
-            dataEncoding: record.encoding || "",
-            dataSize: record.data ? record.data.byteLength : 0,
-            data,
-          });
-          text += data + " ";
+
+        // Process NDEF records if available
+        if (event.message && event.message.records) {
+          for (const [i, record] of event.message.records.entries()) {
+            let recordType = record.recordType || "empty";
+            let mediaType = record.mediaType || "";
+            let data = "";
+
+            try {
+              data = decoder.decode(record.data);
+            } catch (e) {
+              console.warn("Failed to decode NFC data:", e);
+              data = "Binary data";
+            }
+
+            records.push({
+              id: i,
+              recordType,
+              mediaType,
+              dataEncoding: record.encoding || "",
+              dataSize: record.data ? record.data.byteLength : 0,
+              data,
+            });
+            text += data + " ";
+          }
         }
-        const result =
-          text.trim() ||
-          (records.length === 0 ? "NFC tag terbaca, tapi kosong" : "");
+
+        // Always show serial number, even if no NDEF data
+        const serialNumber = event.serialNumber || "Unknown";
+        const result = text.trim() || `NFC Tag ID: ${serialNumber}`;
+
         setNfcResult(result);
         setNfcHistory((prev) => [result, ...prev]);
         setNfcTagInfo({
-          serialNumber: event.serialNumber || "-",
-          recordCount: event.message.records.length,
+          serialNumber: serialNumber,
+          recordCount: event.message ? event.message.records.length : 0,
           records,
+          tagType: "NFC",
+          timestamp: new Date().toISOString(),
         });
         setNfcReading(false);
       };
+
+      // Handle reading errors
       ndef.onerror = (err) => {
         clearTimeout(timeoutId);
+        console.error("NFC Error:", err);
         setNfcResult("Gagal membaca NFC: " + (err?.message || err));
         setNfcReading(false);
       };
+
+      // Handle reading without NDEF data (for empty tags)
+      ndef.onreadingerror = (err) => {
+        clearTimeout(timeoutId);
+        console.log("NFC Reading Error (possibly empty tag):", err);
+
+        // Try to get serial number even if NDEF reading fails
+        if (err && err.serialNumber) {
+          const result = `NFC Tag ID: ${err.serialNumber} (No NDEF data)`;
+          setNfcResult(result);
+          setNfcHistory((prev) => [result, ...prev]);
+          setNfcTagInfo({
+            serialNumber: err.serialNumber,
+            recordCount: 0,
+            records: [],
+            tagType: "NFC",
+            timestamp: new Date().toISOString(),
+            note: "Tag detected but no NDEF data found",
+          });
+        } else {
+          setNfcResult("Tag terdeteksi tapi tidak dapat membaca data");
+        }
+        setNfcReading(false);
+      };
     } catch (err) {
+      console.error("NFC Scan Error:", err);
       setNfcResult("Gagal memulai scan NFC: " + (err?.message || err));
       setNfcReading(false);
     }
@@ -236,6 +285,7 @@ function App() {
     try {
       const ndef = new window.NDEFReader();
       await ndef.scan();
+
       let timeoutId = setTimeout(() => {
         setRfidResult(
           "Tidak ada tag RFID yang terbaca. Silakan coba lagi dan pastikan tag didekatkan ke perangkat."
@@ -243,8 +293,10 @@ function App() {
         setRfidReading(false);
       }, 10000); // 10 detik timeout
 
+      // Handle successful reading
       ndef.onreading = (event) => {
         clearTimeout(timeoutId);
+        console.log("RFID Tag detected:", event);
 
         // RFID biasanya hanya memiliki serial number tanpa NDEF data
         const serialNumber = event.serialNumber || "Unknown";
@@ -262,7 +314,15 @@ function App() {
           for (const [i, record] of event.message.records.entries()) {
             let recordType = record.recordType || "empty";
             let mediaType = record.mediaType || "";
-            let data = decoder.decode(record.data);
+            let data = "";
+
+            try {
+              data = decoder.decode(record.data);
+            } catch (e) {
+              console.warn("Failed to decode NFC data:", e);
+              data = "Binary data";
+            }
+
             records.push({
               id: i,
               recordType,
@@ -275,7 +335,7 @@ function App() {
           }
         }
 
-        // Format RFID result
+        // Format RFID result - prioritize serial number
         const result = rfidData.trim() || `RFID Tag ID: ${serialNumber}`;
         setRfidResult(result);
         setRfidHistory((prev) => [result, ...prev]);
@@ -289,12 +349,39 @@ function App() {
         setRfidReading(false);
       };
 
+      // Handle reading errors
       ndef.onerror = (err) => {
         clearTimeout(timeoutId);
+        console.error("RFID Error:", err);
         setRfidResult("Gagal membaca RFID: " + (err?.message || err));
         setRfidReading(false);
       };
+
+      // Handle reading without NDEF data (for empty tags)
+      ndef.onreadingerror = (err) => {
+        clearTimeout(timeoutId);
+        console.log("RFID Reading Error (possibly empty tag):", err);
+
+        // Try to get serial number even if NDEF reading fails
+        if (err && err.serialNumber) {
+          const result = `RFID Tag ID: ${err.serialNumber} (No NDEF data)`;
+          setRfidResult(result);
+          setRfidHistory((prev) => [result, ...prev]);
+          setRfidTagInfo({
+            serialNumber: err.serialNumber,
+            recordCount: 0,
+            records: [],
+            tagType: "RFID",
+            timestamp: new Date().toISOString(),
+            note: "Tag detected but no NDEF data found",
+          });
+        } else {
+          setRfidResult("Tag terdeteksi tapi tidak dapat membaca data");
+        }
+        setRfidReading(false);
+      };
     } catch (err) {
+      console.error("RFID Scan Error:", err);
       setRfidResult("Gagal memulai scan RFID: " + (err?.message || err));
       setRfidReading(false);
     }
