@@ -223,16 +223,80 @@ const NFCPage = ({
             )}
 
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">
-                  {currentTagInfo.tagType === "KTP"
-                    ? "ID Chip:"
-                    : "Serial Number:"}
-                </span>
-                <span className="font-mono text-gray-800">
-                  {currentTagInfo.serialNumber}
-                </span>
+              {/* FIELD KHUSUS NFC/RFID ADVANCED */}
+              <div className="mb-2">
+                <div className="font-semibold text-gray-700 mb-1">
+                  Info Teknis Tag
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div>Tag type</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.tagType || "Tidak tersedia di browser"}
+                  </div>
+                  <div>Technologies available</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.techList
+                      ? Array.isArray(currentTagInfo.techList)
+                        ? currentTagInfo.techList.join(", ")
+                        : currentTagInfo.techList
+                      : "Tidak tersedia di browser"}
+                  </div>
+                  <div>Serial number</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.serialNumber || "Tidak tersedia di browser"}
+                  </div>
+                  <div>ATQA</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.atqa !== undefined &&
+                    currentTagInfo.atqa !== null
+                      ? currentTagInfo.atqa
+                      : "Tidak tersedia di browser"}
+                  </div>
+                  <div>SAK</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.sak !== undefined &&
+                    currentTagInfo.sak !== null
+                      ? currentTagInfo.sak
+                      : "Tidak tersedia di browser"}
+                  </div>
+                  <div>historicalBytes</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.historicalBytes !== undefined &&
+                    currentTagInfo.historicalBytes !== null
+                      ? JSON.stringify(currentTagInfo.historicalBytes)
+                      : "Tidak tersedia di browser"}
+                  </div>
+                  <div>hiLayerResponse</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.hiLayerResponse !== undefined &&
+                    currentTagInfo.hiLayerResponse !== null
+                      ? JSON.stringify(currentTagInfo.hiLayerResponse)
+                      : "Tidak tersedia di browser"}
+                  </div>
+                  <div>timeout</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.timeout !== undefined &&
+                    currentTagInfo.timeout !== null
+                      ? currentTagInfo.timeout
+                      : "Tidak tersedia di browser"}
+                  </div>
+                  <div>extendedLengthApduSupported</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.extendedLengthApduSupported !== undefined &&
+                    currentTagInfo.extendedLengthApduSupported !== null
+                      ? String(currentTagInfo.extendedLengthApduSupported)
+                      : "Tidak tersedia di browser"}
+                  </div>
+                  <div>maxTransceiveLength</div>
+                  <div className="font-mono text-gray-800">
+                    {currentTagInfo.maxTransceiveLength !== undefined &&
+                    currentTagInfo.maxTransceiveLength !== null
+                      ? currentTagInfo.maxTransceiveLength
+                      : "Tidak tersedia di browser"}
+                  </div>
+                </div>
               </div>
+              {/* END FIELD KHUSUS NFC/RFID ADVANCED */}
               <div className="flex justify-between">
                 <span className="text-gray-600">Record Count:</span>
                 <span className="text-gray-800">

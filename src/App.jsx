@@ -197,6 +197,16 @@ function App() {
           records: [],
           tagType: "NFC",
           timestamp: new Date().toISOString(),
+          atqa: event.atqa || null,
+          sak: event.sak || null,
+          historicalBytes: event.historicalBytes || null,
+          hiLayerResponse: event.hiLayerResponse || null,
+          timeout: event.timeout || null,
+          extendedLengthApduSupported:
+            event.extendedLengthApduSupported || null,
+          maxTransceiveLength: event.maxTransceiveLength || null,
+          techList: event.techList || null,
+          rawEvent: event,
         };
 
         // Process NDEF records if available
@@ -328,6 +338,16 @@ function App() {
             note: isKTP
               ? "KTP terdeteksi tapi data terenkripsi"
               : "Tag detected but no NDEF data found",
+            atqa: err.atqa || null,
+            sak: err.sak || null,
+            historicalBytes: err.historicalBytes || null,
+            hiLayerResponse: err.hiLayerResponse || null,
+            timeout: err.timeout || null,
+            extendedLengthApduSupported:
+              err.extendedLengthApduSupported || null,
+            maxTransceiveLength: err.maxTransceiveLength || null,
+            techList: err.techList || null,
+            rawEvent: err,
           });
         } else {
           setNfcResult("Tag terdeteksi tapi tidak dapat membaca data");
@@ -425,6 +445,16 @@ function App() {
           records: [],
           tagType: "RFID",
           timestamp: new Date().toISOString(),
+          atqa: event.atqa || null,
+          sak: event.sak || null,
+          historicalBytes: event.historicalBytes || null,
+          hiLayerResponse: event.hiLayerResponse || null,
+          timeout: event.timeout || null,
+          extendedLengthApduSupported:
+            event.extendedLengthApduSupported || null,
+          maxTransceiveLength: event.maxTransceiveLength || null,
+          techList: event.techList || null,
+          rawEvent: event,
         };
 
         if (
@@ -560,6 +590,16 @@ function App() {
             note: isKTP
               ? "KTP terdeteksi tapi data terenkripsi"
               : "Tag detected but no NDEF data found",
+            atqa: err.atqa || null,
+            sak: err.sak || null,
+            historicalBytes: err.historicalBytes || null,
+            hiLayerResponse: err.hiLayerResponse || null,
+            timeout: err.timeout || null,
+            extendedLengthApduSupported:
+              err.extendedLengthApduSupported || null,
+            maxTransceiveLength: err.maxTransceiveLength || null,
+            techList: err.techList || null,
+            rawEvent: err,
           });
         } else {
           setRfidResult("Tag terdeteksi tapi tidak dapat membaca data");
