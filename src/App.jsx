@@ -88,7 +88,6 @@ function App() {
 
       const targetPage = params.get("page");
       const productId = params.get("id");
-      const tab = params.get("tab");
 
       if (targetPage === "product" && productId) {
         const product = productsData.find((p) => p.id === parseInt(productId));
@@ -251,17 +250,6 @@ function App() {
           : notification
       )
     );
-  };
-
-  // Add new notification
-  const addNotification = (notification) => {
-    const newNotification = {
-      id: Date.now(),
-      time: "Baru saja",
-      read: false,
-      ...notification,
-    };
-    setNotifications((prev) => [newNotification, ...prev]);
   };
 
   return (

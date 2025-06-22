@@ -20,102 +20,174 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [availableCameras, setAvailableCameras] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState(null);
+  const [currentStream, setCurrentStream] = useState(null);
+  const [localCameraError, setLocalCameraError] = useState("");
+  const [isInitializing, setIsInitializing] = useState(true);
   const fileInputRef = useRef(null);
 
-  // Get available cameras
+  // Initialize camera system
   useEffect(() => {
-    getAvailableCameras();
+    initializeCamera();
   }, []);
+
+  const initializeCamera = async () => {
+    setIsInitializing(true);
+    setLocalCameraError("");
+
+    try {
+      // First, request camera permission
+      console.log("Requesting camera permission...");
+      const initialStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+
+      // Stop initial stream
+      initialStream.getTracks().forEach((track) => track.stop());
+
+      // Now enumerate devices
+      await getAvailableCameras();
+    } catch (error) {
+      console.error("Camera initialization failed:", error);
+      setLocalCameraError("Tidak dapat mengakses kamera: " + error.message);
+    } finally {
+      setIsInitializing(false);
+    }
+  };
 
   const getAvailableCameras = async () => {
     try {
+      console.log("Enumerating camera devices...");
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(
         (device) => device.kind === "videoinput"
       );
+
+      console.log("Available cameras:", videoDevices);
       setAvailableCameras(videoDevices);
+
+      if (videoDevices.length === 0) {
+        setLocalCameraError("Tidak ada kamera yang tersedia");
+        return;
+      }
 
       // Auto-select back camera if available
       const backCamera = videoDevices.find(
         (device) =>
           device.label.toLowerCase().includes("back") ||
           device.label.toLowerCase().includes("environment") ||
-          device.label.toLowerCase().includes("belakang")
+          device.label.toLowerCase().includes("belakang") ||
+          device.label.toLowerCase().includes("rear") ||
+          device.label.toLowerCase().includes("main")
       );
 
       if (backCamera) {
+        console.log("Selected back camera:", backCamera.label);
         setSelectedCamera(backCamera.deviceId);
         setCameraFacing("environment");
-      } else if (videoDevices.length > 0) {
+      } else {
+        console.log("Selected first available camera:", videoDevices[0].label);
         setSelectedCamera(videoDevices[0].deviceId);
+
+        // Determine facing mode based on camera label
+        const isFrontCamera =
+          videoDevices[0].label.toLowerCase().includes("front") ||
+          videoDevices[0].label.toLowerCase().includes("user") ||
+          videoDevices[0].label.toLowerCase().includes("depan") ||
+          videoDevices[0].label.toLowerCase().includes("selfie");
+        setCameraFacing(isFrontCamera ? "user" : "environment");
       }
     } catch (error) {
       console.error("Error getting cameras:", error);
+      setLocalCameraError("Gagal mendapatkan daftar kamera: " + error.message);
     }
   };
 
   // Start camera stream
   const startCamera = async (deviceId = null) => {
-    if (videoRef.current) {
-      // Stop existing stream
-      if (videoRef.current.srcObject) {
-        const tracks = videoRef.current.srcObject.getTracks();
-        tracks.forEach((track) => track.stop());
-      }
+    if (!videoRef?.current) {
+      console.error("Video ref not available");
+      return;
+    }
 
-      try {
-        const constraints = {
-          video: {
-            deviceId: deviceId ? { exact: deviceId } : undefined,
-            facingMode: deviceId ? undefined : cameraFacing,
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-        };
+    // Stop existing stream
+    if (currentStream) {
+      console.log("Stopping existing stream...");
+      currentStream.getTracks().forEach((track) => track.stop());
+      setCurrentStream(null);
+    }
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        videoRef.current.srcObject = stream;
-        setIsStreamActive(true);
-        setIsPaused(false);
-      } catch (error) {
-        console.error("Error starting camera:", error);
-        setCameraError("Tidak dapat mengakses kamera: " + error.message);
-      }
+    try {
+      console.log("Starting camera with deviceId:", deviceId);
+
+      const constraints = {
+        video: {
+          deviceId: deviceId ? { exact: deviceId } : undefined,
+          facingMode: deviceId ? undefined : cameraFacing,
+          width: { ideal: 1920, min: 640 },
+          height: { ideal: 1080, min: 480 },
+          frameRate: { ideal: 30, min: 15 },
+        },
+      };
+
+      console.log("Camera constraints:", constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      videoRef.current.srcObject = stream;
+      setCurrentStream(stream);
+      setIsStreamActive(true);
+      setIsPaused(false);
+
+      console.log("Camera started successfully");
+    } catch (error) {
+      console.error("Error starting camera:", error);
+      setLocalCameraError("Tidak dapat mengakses kamera: " + error.message);
+      setIsStreamActive(false);
     }
   };
 
   // Switch camera
   const switchCamera = async () => {
-    const currentIndex = availableCameras.findIndex(
-      (cam) => cam.deviceId === selectedCamera
-    );
-    const nextIndex = (currentIndex + 1) % availableCameras.length;
-    const nextCamera = availableCameras[nextIndex];
+    if (availableCameras.length < 2) {
+      console.log("Only one camera available");
+      return;
+    }
 
-    setSelectedCamera(nextCamera.deviceId);
+    try {
+      console.log("Switching camera...");
+      const currentIndex = availableCameras.findIndex(
+        (cam) => cam.deviceId === selectedCamera
+      );
+      const nextIndex = (currentIndex + 1) % availableCameras.length;
+      const nextCamera = availableCameras[nextIndex];
 
-    // Determine facing mode based on camera label
-    const isBackCamera =
-      nextCamera.label.toLowerCase().includes("back") ||
-      nextCamera.label.toLowerCase().includes("environment") ||
-      nextCamera.label.toLowerCase().includes("belakang");
+      console.log("Switching to camera:", nextCamera.label);
+      setSelectedCamera(nextCamera.deviceId);
 
-    setCameraFacing(isBackCamera ? "environment" : "user");
-    await startCamera(nextCamera.deviceId);
+      // Determine facing mode based on camera label
+      const isBackCamera =
+        nextCamera.label.toLowerCase().includes("back") ||
+        nextCamera.label.toLowerCase().includes("environment") ||
+        nextCamera.label.toLowerCase().includes("belakang") ||
+        nextCamera.label.toLowerCase().includes("rear") ||
+        nextCamera.label.toLowerCase().includes("main");
+
+      setCameraFacing(isBackCamera ? "environment" : "user");
+      await startCamera(nextCamera.deviceId);
+    } catch (error) {
+      console.error("Error switching camera:", error);
+      setLocalCameraError("Gagal mengganti kamera: " + error.message);
+    }
   };
 
   // Toggle camera pause
   const togglePause = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
+    if (currentStream) {
+      const tracks = currentStream.getTracks();
       tracks.forEach((track) => {
-        if (isPaused) {
-          track.enabled = true;
-        } else {
-          track.enabled = false;
-        }
+        track.enabled = !isPaused;
       });
       setIsPaused(!isPaused);
+      console.log("Camera paused:", !isPaused);
     }
   };
 
@@ -197,7 +269,7 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
       return;
     }
 
-    if (!videoRef.current || !isStreamActive) {
+    if (!videoRef?.current || !isStreamActive) {
       setBarcodeResult("Kamera tidak aktif");
       return;
     }
@@ -248,10 +320,45 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
 
   // Start camera when component mounts or camera changes
   useEffect(() => {
-    if (selectedCamera) {
+    if (selectedCamera && !isInitializing) {
       startCamera(selectedCamera);
     }
-  }, [selectedCamera]);
+  }, [selectedCamera, isInitializing]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (currentStream) {
+        currentStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [currentStream]);
+
+  // Use local error or prop error
+  const displayError = localCameraError || cameraError;
+
+  if (isInitializing) {
+    return (
+      <div className="bg-black min-h-screen flex flex-col">
+        <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="p-2 rounded-full hover:bg-gray-800 transition"
+          >
+            <ArrowLeftIcon className="w-6 h-6" />
+          </button>
+          <h1 className="text-lg font-semibold">Kamera</h1>
+          <div className="w-10"></div>
+        </div>
+        <div className="flex-1 flex items-center justify-center text-white">
+          <div className="text-center">
+            <CameraIcon className="w-16 h-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+            <p className="text-gray-400">Menginisialisasi kamera...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-black min-h-screen flex flex-col">
@@ -318,11 +425,17 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
 
       {/* Camera View */}
       <div className="flex-1 relative">
-        {cameraError ? (
+        {displayError ? (
           <div className="flex items-center justify-center h-full text-white">
             <div className="text-center">
               <CameraIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-400">{cameraError}</p>
+              <p className="text-gray-400 mb-4">{displayError}</p>
+              <button
+                onClick={initializeCamera}
+                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
+              >
+                Coba Lagi
+              </button>
             </div>
           </div>
         ) : (
@@ -352,6 +465,14 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
               {cameraFacing === "environment"
                 ? "Kamera Belakang"
                 : "Kamera Depan"}
+              {availableCameras.length > 1 && (
+                <span className="ml-2">({availableCameras.length} kamera)</span>
+              )}
+            </div>
+
+            {/* Camera status */}
+            <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+              {isStreamActive ? (isPaused ? "Dijeda" : "Aktif") : "Tidak Aktif"}
             </div>
           </>
         )}
@@ -363,7 +484,8 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
           <div className="flex items-center justify-center">
             <button
               onClick={onTakePhoto}
-              className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition"
+              disabled={!isStreamActive || isPaused}
+              className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition disabled:opacity-50"
             >
               <CameraIcon className="w-8 h-8 text-black" />
             </button>
@@ -390,7 +512,7 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
 
             <button
               onClick={handleBarcodeScan}
-              disabled={scanning || !isStreamActive}
+              disabled={scanning || !isStreamActive || isPaused}
               className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <QrCodeIcon className="w-5 h-5" />
@@ -407,7 +529,7 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
       </div>
 
       {/* Photo Gallery */}
-      {photos.length > 0 && (
+      {photos && photos.length > 0 && (
         <div className="bg-gray-900 px-4 py-4">
           <h3 className="text-white font-medium mb-3">Foto Terbaru</h3>
           <div className="flex gap-2 overflow-x-auto">
