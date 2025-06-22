@@ -163,6 +163,7 @@ function App() {
     setNfcResult("");
     setNfcReading(true);
     setNfcTagInfo(null);
+
     if (!("NDEFReader" in window)) {
       setNfcResult(
         "Browser tidak mendukung Web NFC. Silakan gunakan Chrome di Android."
@@ -170,6 +171,7 @@ function App() {
       setNfcReading(false);
       return;
     }
+
     try {
       const ndef = new window.NDEFReader();
       await ndef.scan();
@@ -179,7 +181,7 @@ function App() {
           "Tidak ada tag NFC yang terbaca. Silakan coba lagi dan pastikan tag didekatkan ke perangkat."
         );
         setNfcReading(false);
-      }, 10000); // 10 detik timeout
+      }, 15000); // 15 detik timeout untuk KTP
 
       // Handle successful reading
       ndef.onreading = (event) => {
@@ -189,46 +191,92 @@ function App() {
         const decoder = new TextDecoder();
         let text = "";
         let records = [];
+        let tagInfo = {
+          serialNumber: event.serialNumber || "Unknown",
+          recordCount: 0,
+          records: [],
+          tagType: "NFC",
+          timestamp: new Date().toISOString(),
+        };
 
         // Process NDEF records if available
         if (event.message && event.message.records) {
+          tagInfo.recordCount = event.message.records.length;
+
           for (const [i, record] of event.message.records.entries()) {
             let recordType = record.recordType || "empty";
             let mediaType = record.mediaType || "";
             let data = "";
-
-            try {
-              data = decoder.decode(record.data);
-            } catch (e) {
-              console.warn("Failed to decode NFC data:", e);
-              data = "Binary data";
-            }
-
-            records.push({
+            let recordInfo = {
               id: i,
               recordType,
               mediaType,
               dataEncoding: record.encoding || "",
               dataSize: record.data ? record.data.byteLength : 0,
-              data,
-            });
-            text += data + " ";
+              data: "",
+            };
+
+            try {
+              // Handle different data formats
+              if (record.data) {
+                if (recordType === "text") {
+                  data = decoder.decode(record.data);
+                } else if (recordType === "url") {
+                  data = decoder.decode(record.data);
+                } else if (
+                  recordType === "mime" &&
+                  mediaType === "application/json"
+                ) {
+                  data = decoder.decode(record.data);
+                } else {
+                  // Try to decode as text, if fails show as hex
+                  try {
+                    data = decoder.decode(record.data);
+                  } catch (e) {
+                    // Convert to hex string for binary data
+                    const bytes = new Uint8Array(record.data);
+                    data = Array.from(bytes, (byte) =>
+                      byte.toString(16).padStart(2, "0")
+                    ).join(" ");
+                  }
+                }
+              }
+
+              recordInfo.data = data;
+              records.push(recordInfo);
+              text += data + " ";
+            } catch (e) {
+              console.warn("Failed to decode NFC record:", e);
+              recordInfo.data = "Binary data (decode failed)";
+              records.push(recordInfo);
+            }
           }
         }
 
-        // Always show serial number, even if no NDEF data
-        const serialNumber = event.serialNumber || "Unknown";
-        const result = text.trim() || `NFC Tag ID: ${serialNumber}`;
+        // Check if this might be a KTP
+        const isKTP = checkIfKTP(event.serialNumber, text, records);
+
+        // Format result
+        let result = "";
+        if (isKTP) {
+          result = `KTP Terdeteksi!\nID: ${event.serialNumber}\nData: ${
+            text.trim() || "Data KTP (terenkripsi)"
+          }`;
+        } else if (text.trim()) {
+          result = `NFC Tag ID: ${event.serialNumber}\nData: ${text.trim()}`;
+        } else {
+          result = `NFC Tag ID: ${event.serialNumber} (No readable data)`;
+        }
+
+        tagInfo.records = records;
+        if (isKTP) {
+          tagInfo.tagType = "KTP";
+          tagInfo.note = "Kartu Tanda Penduduk terdeteksi";
+        }
 
         setNfcResult(result);
         setNfcHistory((prev) => [result, ...prev]);
-        setNfcTagInfo({
-          serialNumber: serialNumber,
-          recordCount: event.message ? event.message.records.length : 0,
-          records,
-          tagType: "NFC",
-          timestamp: new Date().toISOString(),
-        });
+        setNfcTagInfo(tagInfo);
         setNfcReading(false);
       };
 
@@ -236,27 +284,50 @@ function App() {
       ndef.onerror = (err) => {
         clearTimeout(timeoutId);
         console.error("NFC Error:", err);
-        setNfcResult("Gagal membaca NFC: " + (err?.message || err));
+
+        let errorMessage = "Gagal membaca NFC: " + (err?.message || err);
+
+        // Provide more specific error messages
+        if (err?.name === "NotAllowedError") {
+          errorMessage =
+            "Izin NFC ditolak. Silakan izinkan akses NFC di pengaturan browser.";
+        } else if (err?.name === "NotSupportedError") {
+          errorMessage = "Perangkat tidak mendukung NFC atau NFC tidak aktif.";
+        } else if (err?.name === "AbortError") {
+          errorMessage = "Scan NFC dibatalkan.";
+        }
+
+        setNfcResult(errorMessage);
         setNfcReading(false);
       };
 
-      // Handle reading without NDEF data (for empty tags)
+      // Handle reading without NDEF data (for empty tags or KTP)
       ndef.onreadingerror = (err) => {
         clearTimeout(timeoutId);
-        console.log("NFC Reading Error (possibly empty tag):", err);
+        console.log("NFC Reading Error (possibly empty tag or KTP):", err);
 
         // Try to get serial number even if NDEF reading fails
         if (err && err.serialNumber) {
-          const result = `NFC Tag ID: ${err.serialNumber} (No NDEF data)`;
+          const isKTP = checkIfKTP(err.serialNumber, "", []);
+          let result = "";
+
+          if (isKTP) {
+            result = `KTP Terdeteksi!\nID: ${err.serialNumber}\nData: Data KTP (terenkripsi atau tidak dapat dibaca)`;
+          } else {
+            result = `NFC Tag ID: ${err.serialNumber} (No NDEF data)`;
+          }
+
           setNfcResult(result);
           setNfcHistory((prev) => [result, ...prev]);
           setNfcTagInfo({
             serialNumber: err.serialNumber,
             recordCount: 0,
             records: [],
-            tagType: "NFC",
+            tagType: isKTP ? "KTP" : "NFC",
             timestamp: new Date().toISOString(),
-            note: "Tag detected but no NDEF data found",
+            note: isKTP
+              ? "KTP terdeteksi tapi data terenkripsi"
+              : "Tag detected but no NDEF data found",
           });
         } else {
           setNfcResult("Tag terdeteksi tapi tidak dapat membaca data");
@@ -270,11 +341,54 @@ function App() {
     }
   };
 
+  // Helper function to check if tag might be a KTP
+  const checkIfKTP = (serialNumber, text, records) => {
+    // KTP typically has specific characteristics:
+    // 1. Serial number might start with specific patterns
+    // 2. May contain specific data patterns
+    // 3. Usually has encrypted or binary data
+
+    const serialStr = serialNumber.toString().toLowerCase();
+    const textLower = text.toLowerCase();
+
+    // Check serial number patterns (Indonesian KTP patterns)
+    if (
+      serialStr.includes("ktp") ||
+      serialStr.includes("e-ktp") ||
+      serialStr.includes("nik") ||
+      serialStr.length === 16
+    ) {
+      return true;
+    }
+
+    // Check for KTP-related text in data
+    if (
+      textLower.includes("ktp") ||
+      textLower.includes("nik") ||
+      textLower.includes("indonesia") ||
+      textLower.includes("republik")
+    ) {
+      return true;
+    }
+
+    // Check for specific record types that might indicate KTP
+    const ktpRecordTypes = [
+      "application/vnd.wfa.wsc",
+      "application/octet-stream",
+    ];
+    if (records.some((record) => ktpRecordTypes.includes(record.recordType))) {
+      return true;
+    }
+
+    return false;
+  };
+
   // RFID: Mulai scan
   const handleScanRfid = async () => {
     setRfidResult("");
     setRfidReading(true);
     setRfidTagInfo(null);
+
     if (!("NDEFReader" in window)) {
       setRfidResult(
         "Browser tidak mendukung Web NFC/RFID. Silakan gunakan Chrome di Android."
@@ -282,6 +396,7 @@ function App() {
       setRfidReading(false);
       return;
     }
+
     try {
       const ndef = new window.NDEFReader();
       await ndef.scan();
@@ -291,7 +406,7 @@ function App() {
           "Tidak ada tag RFID yang terbaca. Silakan coba lagi dan pastikan tag didekatkan ke perangkat."
         );
         setRfidReading(false);
-      }, 10000); // 10 detik timeout
+      }, 15000); // 15 detik timeout untuk KTP
 
       // Handle successful reading
       ndef.onreading = (event) => {
@@ -304,6 +419,13 @@ function App() {
         // Coba decode jika ada data
         let rfidData = "";
         let records = [];
+        let tagInfo = {
+          serialNumber: serialNumber,
+          recordCount: 0,
+          records: [],
+          tagType: "RFID",
+          timestamp: new Date().toISOString(),
+        };
 
         if (
           event.message &&
@@ -311,41 +433,82 @@ function App() {
           event.message.records.length > 0
         ) {
           const decoder = new TextDecoder();
+          tagInfo.recordCount = event.message.records.length;
+
           for (const [i, record] of event.message.records.entries()) {
             let recordType = record.recordType || "empty";
             let mediaType = record.mediaType || "";
             let data = "";
-
-            try {
-              data = decoder.decode(record.data);
-            } catch (e) {
-              console.warn("Failed to decode NFC data:", e);
-              data = "Binary data";
-            }
-
-            records.push({
+            let recordInfo = {
               id: i,
               recordType,
               mediaType,
               dataEncoding: record.encoding || "",
               dataSize: record.data ? record.data.byteLength : 0,
-              data,
-            });
-            rfidData += data + " ";
+              data: "",
+            };
+
+            try {
+              // Handle different data formats for RFID
+              if (record.data) {
+                if (recordType === "text") {
+                  data = decoder.decode(record.data);
+                } else if (recordType === "url") {
+                  data = decoder.decode(record.data);
+                } else if (
+                  recordType === "mime" &&
+                  mediaType === "application/json"
+                ) {
+                  data = decoder.decode(record.data);
+                } else {
+                  // Try to decode as text, if fails show as hex
+                  try {
+                    data = decoder.decode(record.data);
+                  } catch (e) {
+                    // Convert to hex string for binary data
+                    const bytes = new Uint8Array(record.data);
+                    data = Array.from(bytes, (byte) =>
+                      byte.toString(16).padStart(2, "0")
+                    ).join(" ");
+                  }
+                }
+              }
+
+              recordInfo.data = data;
+              records.push(recordInfo);
+              rfidData += data + " ";
+            } catch (e) {
+              console.warn("Failed to decode RFID record:", e);
+              recordInfo.data = "Binary data (decode failed)";
+              records.push(recordInfo);
+            }
           }
         }
 
+        // Check if this might be a KTP
+        const isKTP = checkIfKTP(serialNumber, rfidData, records);
+
         // Format RFID result - prioritize serial number
-        const result = rfidData.trim() || `RFID Tag ID: ${serialNumber}`;
+        let result = "";
+        if (isKTP) {
+          result = `KTP Terdeteksi!\nID: ${serialNumber}\nData: ${
+            rfidData.trim() || "Data KTP (terenkripsi)"
+          }`;
+        } else if (rfidData.trim()) {
+          result = `RFID Tag ID: ${serialNumber}\nData: ${rfidData.trim()}`;
+        } else {
+          result = `RFID Tag ID: ${serialNumber} (No readable data)`;
+        }
+
+        tagInfo.records = records;
+        if (isKTP) {
+          tagInfo.tagType = "KTP";
+          tagInfo.note = "Kartu Tanda Penduduk terdeteksi";
+        }
+
         setRfidResult(result);
         setRfidHistory((prev) => [result, ...prev]);
-        setRfidTagInfo({
-          serialNumber: serialNumber,
-          recordCount: event.message ? event.message.records.length : 0,
-          records: records,
-          tagType: "RFID",
-          timestamp: new Date().toISOString(),
-        });
+        setRfidTagInfo(tagInfo);
         setRfidReading(false);
       };
 
@@ -353,27 +516,50 @@ function App() {
       ndef.onerror = (err) => {
         clearTimeout(timeoutId);
         console.error("RFID Error:", err);
-        setRfidResult("Gagal membaca RFID: " + (err?.message || err));
+
+        let errorMessage = "Gagal membaca RFID: " + (err?.message || err);
+
+        // Provide more specific error messages
+        if (err?.name === "NotAllowedError") {
+          errorMessage =
+            "Izin RFID ditolak. Silakan izinkan akses NFC di pengaturan browser.";
+        } else if (err?.name === "NotSupportedError") {
+          errorMessage = "Perangkat tidak mendukung RFID atau NFC tidak aktif.";
+        } else if (err?.name === "AbortError") {
+          errorMessage = "Scan RFID dibatalkan.";
+        }
+
+        setRfidResult(errorMessage);
         setRfidReading(false);
       };
 
-      // Handle reading without NDEF data (for empty tags)
+      // Handle reading without NDEF data (for empty tags or KTP)
       ndef.onreadingerror = (err) => {
         clearTimeout(timeoutId);
-        console.log("RFID Reading Error (possibly empty tag):", err);
+        console.log("RFID Reading Error (possibly empty tag or KTP):", err);
 
         // Try to get serial number even if NDEF reading fails
         if (err && err.serialNumber) {
-          const result = `RFID Tag ID: ${err.serialNumber} (No NDEF data)`;
+          const isKTP = checkIfKTP(err.serialNumber, "", []);
+          let result = "";
+
+          if (isKTP) {
+            result = `KTP Terdeteksi!\nID: ${err.serialNumber}\nData: Data KTP (terenkripsi atau tidak dapat dibaca)`;
+          } else {
+            result = `RFID Tag ID: ${err.serialNumber} (No NDEF data)`;
+          }
+
           setRfidResult(result);
           setRfidHistory((prev) => [result, ...prev]);
           setRfidTagInfo({
             serialNumber: err.serialNumber,
             recordCount: 0,
             records: [],
-            tagType: "RFID",
+            tagType: isKTP ? "KTP" : "RFID",
             timestamp: new Date().toISOString(),
-            note: "Tag detected but no NDEF data found",
+            note: isKTP
+              ? "KTP terdeteksi tapi data terenkripsi"
+              : "Tag detected but no NDEF data found",
           });
         } else {
           setRfidResult("Tag terdeteksi tapi tidak dapat membaca data");
