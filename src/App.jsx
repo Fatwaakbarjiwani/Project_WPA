@@ -21,6 +21,14 @@ function App() {
   const [nfcSupported, setNfcSupported] = useState(false);
   const [nfcReading, setNfcReading] = useState(false);
   const [nfcTagInfo, setNfcTagInfo] = useState(null);
+
+  // RFID states
+  const [rfidResult, setRfidResult] = useState("");
+  const [rfidHistory, setRfidHistory] = useState([]);
+  const [rfidReading, setRfidReading] = useState(false);
+  const [rfidTagInfo, setRfidTagInfo] = useState(null);
+  const [scanMode, setScanMode] = useState("nfc"); // "nfc" or "rfid"
+
   const videoRef = useRef(null);
   const [cameraError, setCameraError] = useState("");
   const [user] = useState(userData);
@@ -60,7 +68,7 @@ function App() {
     },
   ]);
 
-  // Cek dukungan NFC
+  // Cek dukungan NFC/RFID
   useEffect(() => {
     if ("NDEFReader" in window) {
       setNfcSupported(true);
@@ -213,6 +221,94 @@ function App() {
     }
   };
 
+  // RFID: Mulai scan
+  const handleScanRfid = async () => {
+    setRfidResult("");
+    setRfidReading(true);
+    setRfidTagInfo(null);
+    if (!("NDEFReader" in window)) {
+      setRfidResult(
+        "Browser tidak mendukung Web NFC/RFID. Silakan gunakan Chrome di Android."
+      );
+      setRfidReading(false);
+      return;
+    }
+    try {
+      const ndef = new window.NDEFReader();
+      await ndef.scan();
+      let timeoutId = setTimeout(() => {
+        setRfidResult(
+          "Tidak ada tag RFID yang terbaca. Silakan coba lagi dan pastikan tag didekatkan ke perangkat."
+        );
+        setRfidReading(false);
+      }, 10000); // 10 detik timeout
+
+      ndef.onreading = (event) => {
+        clearTimeout(timeoutId);
+
+        // RFID biasanya hanya memiliki serial number tanpa NDEF data
+        const serialNumber = event.serialNumber || "Unknown";
+
+        // Coba decode jika ada data
+        let rfidData = "";
+        let records = [];
+
+        if (
+          event.message &&
+          event.message.records &&
+          event.message.records.length > 0
+        ) {
+          const decoder = new TextDecoder();
+          for (const [i, record] of event.message.records.entries()) {
+            let recordType = record.recordType || "empty";
+            let mediaType = record.mediaType || "";
+            let data = decoder.decode(record.data);
+            records.push({
+              id: i,
+              recordType,
+              mediaType,
+              dataEncoding: record.encoding || "",
+              dataSize: record.data ? record.data.byteLength : 0,
+              data,
+            });
+            rfidData += data + " ";
+          }
+        }
+
+        // Format RFID result
+        const result = rfidData.trim() || `RFID Tag ID: ${serialNumber}`;
+        setRfidResult(result);
+        setRfidHistory((prev) => [result, ...prev]);
+        setRfidTagInfo({
+          serialNumber: serialNumber,
+          recordCount: event.message ? event.message.records.length : 0,
+          records: records,
+          tagType: "RFID",
+          timestamp: new Date().toISOString(),
+        });
+        setRfidReading(false);
+      };
+
+      ndef.onerror = (err) => {
+        clearTimeout(timeoutId);
+        setRfidResult("Gagal membaca RFID: " + (err?.message || err));
+        setRfidReading(false);
+      };
+    } catch (err) {
+      setRfidResult("Gagal memulai scan RFID: " + (err?.message || err));
+      setRfidReading(false);
+    }
+  };
+
+  // Universal scan function based on mode
+  const handleScan = async () => {
+    if (scanMode === "nfc") {
+      await handleScanNfc();
+    } else if (scanMode === "rfid") {
+      await handleScanRfid();
+    }
+  };
+
   // Navigasi ke detail produk
   const handleProductClick = (product) => {
     setSelectedProduct(product);
@@ -280,12 +376,18 @@ function App() {
         {page === "nfc" && (
           <NFCPage
             onBack={handleBack}
-            onScan={handleScanNfc}
+            onScan={handleScan}
+            scanMode={scanMode}
+            setScanMode={setScanMode}
             nfcResult={nfcResult}
             nfcHistory={nfcHistory}
             nfcSupported={nfcSupported}
             nfcReading={nfcReading}
             nfcTagInfo={nfcTagInfo}
+            rfidResult={rfidResult}
+            rfidHistory={rfidHistory}
+            rfidReading={rfidReading}
+            rfidTagInfo={rfidTagInfo}
           />
         )}
         {page === "camera" && (

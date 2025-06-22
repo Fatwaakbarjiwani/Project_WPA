@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RFID Test Guide - MarketPlay</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .header {
+        background: linear-gradient(135deg, #ff6b35, #f7931e);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .tag-type {
+        background: #f8f9fa;
+        border-left: 4px solid #ff6b35;
+        padding: 15px;
+        margin: 10px 0;
+      }
+      .compatibility {
+        background: #e8f5e8;
+        border: 1px solid #4caf50;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 10px 0;
+      }
+      .warning {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 10px 0;
+      }
+      .code {
+        background: #f4f4f4;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin: 10px 0;
+      }
+      .step {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🏷️ RFID Testing Guide</h1>
+      <p>Panduan lengkap untuk testing RFID di MarketPlay</p>
+    </div>
+
+    <div class="card">
+      <h2>📱 Kompatibilitas Browser</h2>
+      <div class="compatibility">
+        <strong>✅ Didukung:</strong>
+        <ul>
+          <li>Chrome Android (versi 89+)</li>
+          <li>Edge Android (versi 89+)</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <strong>❌ Tidak Didukung:</strong>
+        <ul>
+          <li>Firefox (semua platform)</li>
+          <li>Safari (semua platform)</li>
+          <li>Desktop browsers</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🏷️ Jenis Tag RFID yang Kompatibel</h2>
+
+      <div class="tag-type">
+        <h3>ISO14443 Type A</h3>
+        <p>
+          <strong>Contoh:</strong> MIFARE Classic, MIFARE Ultralight, MIFARE
+          DESFire
+        </p>
+        <p><strong>Fitur:</strong> High-frequency RFID, jarak baca 1-10 cm</p>
+        <p>
+          <strong>Penggunaan:</strong> Transport cards, access control, payment
+          cards
+        </p>
+      </div>
+
+      <div class="tag-type">
+        <h3>ISO14443 Type B</h3>
+        <p><strong>Contoh:</strong> Calypso, DESFire</p>
+        <p><strong>Fitur:</strong> Secure communication, encryption support</p>
+        <p><strong>Penggunaan:</strong> Government ID cards, secure access</p>
+      </div>
+
+      <div class="tag-type">
+        <h3>ISO15693</h3>
+        <p><strong>Contoh:</strong> I-CODE, Tag-it</p>
+        <p><strong>Fitur:</strong> Longer read range (up to 1 meter)</p>
+        <p><strong>Penggunaan:</strong> Inventory tracking, asset management</p>
+      </div>
+
+      <div class="tag-type">
+        <h3>FeliCa</h3>
+        <p><strong>Contoh:</strong> Sony FeliCa</p>
+        <p><strong>Fitur:</strong> High-speed communication</p>
+        <p>
+          <strong>Penggunaan:</strong> Japanese transport cards, mobile payments
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔧 Cara Testing RFID</h2>
+
+      <div class="step">
+        <h3>Langkah 1: Persiapan</h3>
+        <ul>
+          <li>Pastikan menggunakan Chrome di Android</li>
+          <li>Aktifkan NFC di pengaturan perangkat</li>
+          <li>Buka aplikasi MarketPlay</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <h3>Langkah 2: Akses Scanner</h3>
+        <ul>
+          <li>Buka halaman Scanner (ikon NFC di bottom nav)</li>
+          <li>Pilih mode "RFID"</li>
+          <li>Pastikan status "RFID Scanner" aktif</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <h3>Langkah 3: Scan Tag</h3>
+        <ul>
+          <li>Klik tombol "Scan RFID Tag"</li>
+          <li>Dekatkan tag RFID ke bagian belakang perangkat</li>
+          <li>Jaga jarak 1-10 cm</li>
+          <li>Tunggu hingga tag terdeteksi</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <h3>Langkah 4: Lihat Hasil</h3>
+        <ul>
+          <li>Tag ID akan ditampilkan</li>
+          <li>Klik "Detail Tag" untuk informasi lengkap</li>
+          <li>Riwayat scan tersimpan otomatis</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Contoh Tag RFID untuk Testing</h2>
+
+      <div class="tag-type">
+        <h3>Kartu Transport</h3>
+        <ul>
+          <li>Kartu KRL Commuter Line</li>
+          <li>Kartu TransJakarta</li>
+          <li>Kartu MRT Jakarta</li>
+          <li>Kartu LRT Palembang</li>
+        </ul>
+      </div>
+
+      <div class="tag-type">
+        <h3>Kartu Akses</h3>
+        <ul>
+          <li>Kartu akses kantor</li>
+          <li>Kartu akses hotel</li>
+          <li>Kartu akses parkir</li>
+          <li>Kartu akses gym</li>
+        </ul>
+      </div>
+
+      <div class="tag-type">
+        <h3>Kartu Pembayaran</h3>
+        <ul>
+          <li>Kartu e-money</li>
+          <li>Kartu Flazz</li>
+          <li>Kartu Brizzi</li>
+          <li>Kartu TapCash</li>
+        </ul>
+      </div>
+
+      <div class="tag-type">
+        <h3>Tag RFID Standalone</h3>
+        <ul>
+          <li>RFID key fob</li>
+          <li>RFID sticker</li>
+          <li>RFID card blank</li>
+          <li>RFID wristband</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚠️ Troubleshooting</h2>
+
+      <div class="warning">
+        <h3>Tag tidak terdeteksi</h3>
+        <ul>
+          <li>Pastikan NFC aktif di pengaturan</li>
+          <li>Coba dekatkan tag lebih dekat (1-5 cm)</li>
+          <li>Pastikan tag tidak rusak atau terkelupas</li>
+          <li>Coba tag RFID lain untuk memastikan</li>
+        </ul>
+      </div>
+
+      <div class="warning">
+        <h3>Error "Browser tidak mendukung"</h3>
+        <ul>
+          <li>Gunakan Chrome di Android</li>
+          <li>Pastikan versi Chrome 89 atau lebih baru</li>
+          <li>Coba restart browser</li>
+          <li>Pastikan menggunakan HTTPS</li>
+        </ul>
+      </div>
+
+      <div class="warning">
+        <h3>Tag ID tidak muncul</h3>
+        <ul>
+          <li>Beberapa tag mungkin tidak memiliki serial number</li>
+          <li>Coba tag RFID yang berbeda</li>
+          <li>Pastikan tag dalam kondisi baik</li>
+          <li>Cek apakah tag memiliki data NDEF</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔍 Informasi Teknis</h2>
+
+      <div class="code">
+        <strong>Web NFC API:</strong> NDEFReader<br />
+        <strong>Frequency:</strong> 13.56 MHz (HF RFID)<br />
+        <strong>Read Range:</strong> 1-10 cm<br />
+        <strong>Data Format:</strong> NDEF (NFC Data Exchange Format)<br />
+        <strong>Serial Number:</strong> Unique tag identifier
+      </div>
+
+      <div class="code">
+        <strong>Supported Standards:</strong><br />
+        • ISO14443 Type A/B<br />
+        • ISO15693<br />
+        • FeliCa<br />
+        • MIFARE Classic/Ultralight/DESFire
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📞 Support</h2>
+      <p>Jika mengalami masalah dengan RFID scanning:</p>
+      <ul>
+        <li>Buat issue di repository GitHub</li>
+        <li>Sertakan informasi perangkat dan browser</li>
+        <li>Lampirkan screenshot error jika ada</li>
+        <li>Jelaskan jenis tag RFID yang digunakan</li>
+      </ul>
+    </div>
+
+    <script>
+      // Check if Web NFC is supported
+      if ("NDEFReader" in window) {
+        console.log("✅ Web NFC API supported");
+        document.body.innerHTML +=
+          '<div class="card"><div class="compatibility"><strong>✅ Web NFC API terdeteksi di browser ini!</strong></div></div>';
+      } else {
+        console.log("❌ Web NFC API not supported");
+        document.body.innerHTML +=
+          '<div class="card"><div class="warning"><strong>❌ Web NFC API tidak didukung di browser ini.</strong><br>Gunakan Chrome di Android untuk testing RFID.</div></div>';
+      }
+    </script>
+  </body>
+</html>

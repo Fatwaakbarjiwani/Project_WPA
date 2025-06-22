@@ -21,6 +21,7 @@ MarketPlay adalah aplikasi marketplace Progressive Web App (PWA) dengan fitur NF
 ### 🔍 Scanning Features
 
 - **NFC Scanner**: Scan produk dengan teknologi NFC
+- **RFID Scanner**: Scan RFID tag untuk identifikasi dan tracking
 - **QR Code Scanner**: Scan QR code untuk mencari produk
 - **Camera Integration**: Ambil foto produk langsung dari kamera
 - **Multiple Camera Support**: Dukungan kamera depan dan belakang
@@ -40,7 +41,8 @@ MarketPlay adalah aplikasi marketplace Progressive Web App (PWA) dengan fitur NF
 - **Icons**: Heroicons
 - **PWA**: Service Worker + Web App Manifest
 - **Notifications**: Push API + Web Notifications API
-- **NFC**: Web NFC API
+- **NFC**: Web NFC API (NDEFReader)
+- **RFID**: Web NFC API (NDEFReader)
 - **Camera**: MediaDevices API
 - **QR Code**: jsQR Library + BarcodeDetector API
 
@@ -115,10 +117,19 @@ Implementasikan endpoint berikut di backend Anda:
 
 ### Scan NFC
 
-1. Buka halaman NFC
-2. Klik "Scan NFC Tag"
-3. Dekatkan tag NFC ke perangkat
-4. Lihat hasil scan
+1. Buka halaman Scanner
+2. Pilih mode **NFC**
+3. Klik "Scan NFC Tag"
+4. Dekatkan tag NFC ke perangkat
+5. Lihat hasil scan
+
+### Scan RFID
+
+1. Buka halaman Scanner
+2. Pilih mode **RFID**
+3. Klik "Scan RFID Tag"
+4. Dekatkan tag RFID ke perangkat
+5. Lihat hasil scan
 
 ### Scan QR Code
 
@@ -169,12 +180,41 @@ Implementasikan endpoint berikut di backend Anda:
 - Pastikan pencahayaan cukup
 - Jaga kamera tetap stabil
 
-### Troubleshooting QR Code
+## 🏷️ Fitur RFID Scanning
 
-- **QR Code tidak terdeteksi**: Coba mode Auto atau upload gambar
-- **Library tidak terload**: Refresh halaman dan cek console
-- **Kamera tidak aktif**: Pastikan izin kamera sudah diberikan
-- **Browser tidak mendukung**: Gunakan Chrome/Edge versi terbaru
+### Cara Kerja
+
+1. **NDEFReader**: Menggunakan Web NFC API untuk membaca RFID
+2. **Serial Number**: Menangkap ID unik tag RFID
+3. **Data Parsing**: Parse data NDEF jika tersedia
+4. **History Tracking**: Menyimpan riwayat scan RFID
+
+### RFID vs NFC
+
+- **NFC**: Near Field Communication - untuk transfer data dan pembayaran
+- **RFID**: Radio Frequency Identification - untuk identifikasi dan tracking
+
+### Supported RFID Types
+
+- **ISO14443 Type A**: MIFARE Classic, MIFARE Ultralight
+- **ISO14443 Type B**: Calypso, DESFire
+- **ISO15693**: I-CODE, Tag-it
+- **FeliCa**: Sony FeliCa
+
+### RFID Features
+
+- **Tag ID Detection**: Menangkap serial number tag
+- **NDEF Data Reading**: Membaca data NDEF jika tersedia
+- **Tag Information**: Detail lengkap tag (type, size, timestamp)
+- **Scan History**: Riwayat scan RFID
+- **Real-time Scanning**: Deteksi otomatis saat tag didekatkan
+
+### Tips Penggunaan RFID
+
+- Pastikan tag RFID dalam jarak yang tepat (1-10 cm)
+- Beberapa tag RFID mungkin tidak memiliki data NDEF
+- Tag ID akan selalu terdeteksi meskipun tidak ada data
+- Gunakan Chrome di Android untuk kompatibilitas terbaik
 
 ## 🔔 Jenis Notifikasi
 
@@ -239,7 +279,7 @@ src/
 ├── pages/
 │   ├── HomePage.jsx            # Halaman utama
 │   ├── ProductDetailPage.jsx   # Detail produk
-│   ├── NFCPage.jsx             # Scanner NFC
+│   ├── NFCPage.jsx             # Scanner NFC & RFID
 │   ├── CameraPage.jsx          # Kamera & QR code scanning
 │   └── ProfilePage.jsx         # Profil pengguna
 ├── data/
@@ -283,6 +323,14 @@ src/
 - Pastikan menggunakan HTTPS
 - Pastikan perangkat mendukung NFC
 - Pastikan NFC sudah diaktifkan di pengaturan
+
+### RFID tidak berfungsi
+
+- Pastikan menggunakan Chrome di Android
+- Pastikan menggunakan HTTPS
+- Pastikan perangkat mendukung NFC/RFID
+- Beberapa tag RFID mungkin tidak kompatibel
+- Cek jarak antara tag dan perangkat (1-10 cm)
 
 ### Multiple Camera Issues
 
