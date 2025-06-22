@@ -319,11 +319,6 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
           setScanning(false);
           clearInterval(interval);
           setScanInterval(null);
-
-          // Simulate product search
-          setTimeout(() => {
-            setQrResult(`Produk ditemukan: Smartphone NFC - Rp3.500.000`);
-          }, 1000);
         }
       } catch (error) {
         console.error("Error in continuous scanning:", error);
@@ -371,10 +366,6 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
       if (result) {
         setQrResult(`QR Code terdeteksi: ${result}`);
 
-        // Simulate product search
-        setTimeout(() => {
-          setQrResult(`Produk ditemukan: Smartphone NFC - Rp3.500.000`);
-        }, 1000);
       } else {
         setQrResult("Tidak ada QR Code terdeteksi");
       }
