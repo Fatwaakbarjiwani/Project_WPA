@@ -218,11 +218,6 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
         const result = await scanQRCode(canvas);
         if (result) {
           setQrResult(`QR Code terdeteksi: ${result}`);
-
-          // Simulate product search
-          setTimeout(() => {
-            setQrResult(`Produk ditemukan: Smartphone NFC - Rp3.500.000`);
-          }, 1000);
         } else {
           setQrResult("Tidak ada QR Code terdeteksi dalam gambar");
         }
