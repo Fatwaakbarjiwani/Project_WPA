@@ -1,3 +1,10 @@
+import {
+  ArrowLeftIcon,
+  QrCodeIcon,
+  WifiIcon,
+  CreditCardIcon,
+} from "@heroicons/react/24/outline";
+
 const NFCPage = ({
   onBack,
   onScan,
@@ -6,120 +13,139 @@ const NFCPage = ({
   nfcSupported,
   nfcReading,
   nfcTagInfo,
-}) => (
-  <div className="px-4 py-3">
-    <button className="mb-3 text-blue-600 font-medium" onClick={onBack}>
-      &larr; Kembali
-    </button>
-    <h2 className="text-xl font-bold mb-2">Scan NFC Produk</h2>
-    {!nfcSupported && (
-      <p className="text-red-500 mb-4">Browser tidak mendukung Web NFC.</p>
-    )}
-    {nfcSupported && (
-      <button
-        className="bg-blue-600 text-white rounded-lg px-4 py-2 font-medium shadow hover:bg-blue-700 transition mb-2"
-        onClick={onScan}
-        disabled={nfcReading}
-      >
-        {nfcReading ? "Scanning..." : "Mulai Scan NFC"}
-      </button>
-    )}
-    <div className="mb-4 min-h-6">
-      {nfcReading && (
-        <div className="text-blue-600 font-semibold">
-          Sedang scanning NFC...
-        </div>
-      )}
-      {nfcResult && (
+}) => {
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="bg-orange-500 text-white px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="p-2 rounded-full hover:bg-orange-600 transition"
+        >
+          <ArrowLeftIcon className="w-6 h-6" />
+        </button>
+        <h1 className="text-lg font-semibold">NFC Scanner</h1>
+        <div className="w-10"></div>
+      </div>
+
+      {/* NFC Status */}
+      <div className="px-4 py-4">
         <div
-          className={`mt-1 font-semibold ${
-            nfcResult.startsWith("Gagal") || nfcResult.startsWith("Browser")
-              ? "text-red-600"
-              : nfcResult.startsWith("Tidak ada")
-              ? "text-yellow-600"
-              : "text-green-700"
+          className={`rounded-lg p-4 mb-4 ${
+            nfcSupported
+              ? "bg-green-50 border border-green-200"
+              : "bg-red-50 border border-red-200"
           }`}
         >
-          {nfcResult}
+          <div className="flex items-center gap-3">
+            <QrCodeIcon
+              className={`w-6 h-6 ${
+                nfcSupported ? "text-green-600" : "text-red-600"
+              }`}
+            />
+            <div>
+              <div className="font-medium text-sm">
+                {nfcSupported ? "NFC Tersedia" : "NFC Tidak Tersedia"}
+              </div>
+              <div className="text-xs text-gray-600">
+                {nfcSupported
+                  ? "Perangkat Anda mendukung NFC"
+                  : "Gunakan Chrome di Android untuk NFC"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scan Button */}
+      <div className="px-4 py-4">
+        <button
+          onClick={onScan}
+          disabled={!nfcSupported || nfcReading}
+          className={`w-full py-4 rounded-lg font-medium transition flex items-center justify-center gap-3 ${
+            nfcSupported && !nfcReading
+              ? "bg-orange-500 text-white hover:bg-orange-600"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+        >
+          <QrCodeIcon className="w-6 h-6" />
+          {nfcReading ? "Scanning NFC..." : "Scan NFC Tag"}
+        </button>
+      </div>
+
+      {/* Current Result */}
+      {nfcResult && (
+        <div className="px-4 py-4">
+          <h3 className="font-medium text-gray-800 mb-3">
+            Hasil Scan Terakhir
+          </h3>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="text-sm text-gray-600 mb-2">Data NFC:</div>
+            <div className="font-medium text-gray-800">{nfcResult}</div>
+
+            {nfcTagInfo && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div>Serial Number: {nfcTagInfo.serialNumber}</div>
+                  <div>Records: {nfcTagInfo.recordCount}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* NFC Features */}
+      <div className="px-4 py-4">
+        <h3 className="font-medium text-gray-800 mb-3">Fitur NFC</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <CreditCardIcon className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <div className="font-medium text-sm">Pembayaran</div>
+                <div className="text-xs text-gray-500">Tap to pay</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <WifiIcon className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <div className="font-medium text-sm">Koneksi</div>
+                <div className="text-xs text-gray-500">Quick connect</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* History */}
+      {nfcHistory.length > 0 && (
+        <div className="px-4 py-4">
+          <h3 className="font-medium text-gray-800 mb-3">Riwayat Scan</h3>
+          <div className="space-y-2">
+            {nfcHistory.slice(0, 5).map((result, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-lg p-3 border border-gray-200"
+              >
+                <div className="text-sm text-gray-800">{result}</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {new Date().toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
-    {/* NFC Tag Info */}
-    {nfcTagInfo && (
-      <div className="border rounded-lg p-3 mb-4 bg-gray-50">
-        <div className="font-semibold mb-2">NFC Tag Info</div>
-        <div className="flex flex-col gap-1 text-sm mb-2">
-          <div>
-            <span className="font-medium">Serial Number (Hex):</span>{" "}
-            {nfcTagInfo.serialNumber}
-            {nfcTagInfo.serialNumber === "-" && (
-              <span className="text-xs text-yellow-700 ml-2">
-                Serial Number tidak tersedia untuk tag ini.
-              </span>
-            )}
-          </div>
-          <div>
-            <span className="font-medium">Serial Number (Desimal):</span>{" "}
-            {nfcTagInfo.serialNumber && nfcTagInfo.serialNumber !== "-"
-              ? parseInt(nfcTagInfo.serialNumber.replace(/:/g, ""), 16)
-              : "-"}
-          </div>
-          <div>
-            <span className="font-medium">Record Count:</span>{" "}
-            {nfcTagInfo.recordCount}
-          </div>
-        </div>
-        {nfcTagInfo.records.length === 0 ? (
-          <div className="text-xs text-yellow-700">
-            Tag kosong/tidak ada data NDEF.
-          </div>
-        ) : (
-          nfcTagInfo.records.map((rec, i) => (
-            <div key={i} className="border-t pt-2 mt-2">
-              <div className="font-semibold mb-1">Record {i}</div>
-              <div className="text-xs">
-                <div>
-                  <span className="font-medium">Record ID:</span> {rec.id}
-                </div>
-                <div>
-                  <span className="font-medium">Record Type:</span>{" "}
-                  {rec.recordType || "empty"}
-                </div>
-                <div>
-                  <span className="font-medium">Media Type:</span>{" "}
-                  {rec.mediaType || "-"}
-                </div>
-                <div>
-                  <span className="font-medium">Data Encoding:</span>{" "}
-                  {rec.dataEncoding || "-"}
-                </div>
-                <div>
-                  <span className="font-medium">Data Size:</span> {rec.dataSize}{" "}
-                  bytes
-                </div>
-                <div>
-                  <span className="font-medium">Data:</span> {rec.data || "-"}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    )}
-    <div>
-      <div className="font-semibold mb-2">Riwayat Scan NFC</div>
-      <ul className="text-sm text-gray-700">
-        {nfcHistory.length === 0 && (
-          <li className="text-gray-400">Belum ada riwayat.</li>
-        )}
-        {nfcHistory.map((item, i) => (
-          <li key={i} className="mb-1">
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  </div>
-);
+  );
+};
 
 export default NFCPage;

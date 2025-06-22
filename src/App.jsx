@@ -8,8 +8,8 @@ import CameraPage from "./pages/CameraPage";
 import ProfilePage from "./pages/ProfilePage";
 import productsData from "./data/products";
 import userData from "./data/user";
-import InstallPrompt from "./components/InstallPrompt";
 import InstallModal from "./components/InstallModal";
+import NotificationList from "./components/NotificationList";
 
 function App() {
   const [page, setPage] = useState("home");
@@ -24,6 +24,41 @@ function App() {
   const videoRef = useRef(null);
   const [cameraError, setCameraError] = useState("");
   const [user] = useState(userData);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: "Flash Sale!",
+      message: "Diskon hingga 70% untuk produk gadget",
+      time: "2 menit yang lalu",
+      read: false,
+      type: "flash_sale",
+    },
+    {
+      id: 2,
+      title: "Pesanan Dikonfirmasi",
+      message: "Pesanan #12345 telah dikonfirmasi",
+      time: "1 jam yang lalu",
+      read: false,
+      type: "order",
+    },
+    {
+      id: 3,
+      title: "Poin Bertambah",
+      message: "Anda mendapat 50 poin dari pembelian",
+      time: "2 jam yang lalu",
+      read: true,
+      type: "reward",
+    },
+    {
+      id: 4,
+      title: "Barang Baru!",
+      message: "Smartphone NFC terbaru sudah tersedia",
+      time: "3 jam yang lalu",
+      read: false,
+      type: "new_product",
+    },
+  ]);
 
   // Cek dukungan NFC
   useEffect(() => {
@@ -147,9 +182,52 @@ function App() {
     setPage("home");
   };
 
+  // Handle search
+  const handleSearch = (query) => {
+    // Implementasi pencarian bisa ditambahkan di sini
+    console.log("Search query:", query);
+  };
+
+  // Handle notification click
+  const handleNotification = () => {
+    setShowNotifications(true);
+  };
+
+  // Handle cart click
+  const handleCart = () => {
+    alert("Keranjang belanja akan segera hadir!");
+  };
+
+  // Handle mark notification as read
+  const handleMarkAsRead = (notificationId) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read: true }
+          : notification
+      )
+    );
+  };
+
+  // Add new notification
+  const addNotification = (notification) => {
+    const newNotification = {
+      id: Date.now(),
+      time: "Baru saja",
+      read: false,
+      ...notification,
+    };
+    setNotifications((prev) => [newNotification, ...prev]);
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen flex flex-col max-w-sm mx-auto rounded-lg shadow-lg overflow-hidden border border-gray-200">
-      <Header title="E-Commerce NFC" />
+      <Header
+        title="MarketPlay"
+        onSearch={handleSearch}
+        onNotification={handleNotification}
+        onCart={handleCart}
+      />
       <main className="flex-1 overflow-y-auto">
         {page === "home" && (
           <HomePage
@@ -192,8 +270,16 @@ function App() {
         {page === "profile" && <ProfilePage user={user} onBack={handleBack} />}
       </main>
       <BottomNav page={page === "product" ? "home" : page} setPage={setPage} />
-      {/* <InstallPrompt /> */}
       <InstallModal />
+
+      {/* Notification List Modal */}
+      {showNotifications && (
+        <NotificationList
+          notifications={notifications}
+          onClose={() => setShowNotifications(false)}
+          onMarkAsRead={handleMarkAsRead}
+        />
+      )}
     </div>
   );
 }
