@@ -1,6 +1,6 @@
 # MarketPlay - E-Commerce NFC PWA
 
-MarketPlay adalah aplikasi marketplace Progressive Web App (PWA) dengan fitur NFC dan barcode scanner yang dirancang mirip dengan Shopee.
+MarketPlay adalah aplikasi marketplace Progressive Web App (PWA) dengan fitur NFC dan QR Code scanner yang dirancang mirip dengan Shopee.
 
 ## 🚀 Fitur Utama
 
@@ -21,8 +21,10 @@ MarketPlay adalah aplikasi marketplace Progressive Web App (PWA) dengan fitur NF
 ### 🔍 Scanning Features
 
 - **NFC Scanner**: Scan produk dengan teknologi NFC
-- **Barcode Scanner**: Scan barcode untuk mencari produk
+- **QR Code Scanner**: Scan QR code untuk mencari produk
 - **Camera Integration**: Ambil foto produk langsung dari kamera
+- **Multiple Camera Support**: Dukungan kamera depan dan belakang
+- **Image Upload**: Upload gambar untuk scan QR code
 
 ### 🔔 Notifikasi Push
 
@@ -40,6 +42,7 @@ MarketPlay adalah aplikasi marketplace Progressive Web App (PWA) dengan fitur NF
 - **Notifications**: Push API + Web Notifications API
 - **NFC**: Web NFC API
 - **Camera**: MediaDevices API
+- **QR Code**: jsQR Library + BarcodeDetector API
 
 ## 📦 Instalasi
 
@@ -75,11 +78,8 @@ npm run build
 Untuk notifikasi push, Anda perlu generate VAPID keys:
 
 ```bash
-# Install web-push
-npm install web-push
-
 # Generate VAPID keys
-npx web-push generate-vapid-keys
+npm run generate-vapid
 ```
 
 ### 2. Update Service Worker
@@ -120,12 +120,61 @@ Implementasikan endpoint berikut di backend Anda:
 3. Dekatkan tag NFC ke perangkat
 4. Lihat hasil scan
 
-### Scan Barcode
+### Scan QR Code
 
 1. Buka halaman Kamera
-2. Pilih mode "Barcode"
-3. Arahkan kamera ke barcode
-4. Klik "Scan Barcode"
+2. Pilih mode "QR Code"
+3. Pilih salah satu opsi:
+   - **Scan QR Code**: Scan manual satu kali
+   - **Auto**: Mode scanning otomatis berkelanjutan
+   - **Pilih Gambar**: Upload gambar untuk scan QR code
+4. Arahkan kamera ke QR code atau upload gambar
+5. Lihat hasil scan
+
+### Camera Features
+
+- **Switch Camera**: Ganti antara kamera depan dan belakang
+- **Pause/Resume**: Jeda atau lanjutkan stream kamera
+- **Photo Mode**: Ambil foto produk
+- **Multiple Camera Support**: Otomatis mendeteksi dan memilih kamera terbaik
+
+## 🌟 Fitur QR Code Scanning
+
+### Cara Kerja
+
+1. **Manual Scan**: Ambil frame dari video stream dan scan dengan jsQR
+2. **Auto Scan**: Scan berkelanjutan setiap 500ms untuk deteksi otomatis
+3. **Image Upload**: Scan QR code dari file gambar yang diupload
+
+### Supported Formats
+
+- QR Code (QR)
+- Aztec Code
+- Data Matrix
+- EAN-13, EAN-8
+- UPC-A, UPC-E
+- Code 128, Code 39
+- PDF417
+
+### Library yang Digunakan
+
+- **jsQR**: Library utama untuk QR code detection (via CDN)
+- **BarcodeDetector API**: Fallback untuk browser modern
+
+### Tips Penggunaan QR Code
+
+- Pastikan QR code berada dalam area scanning (kotak orange)
+- Gunakan mode **Auto** untuk scanning yang lebih mudah
+- Untuk QR code yang sulit, coba upload gambar
+- Pastikan pencahayaan cukup
+- Jaga kamera tetap stabil
+
+### Troubleshooting QR Code
+
+- **QR Code tidak terdeteksi**: Coba mode Auto atau upload gambar
+- **Library tidak terload**: Refresh halaman dan cek console
+- **Kamera tidak aktif**: Pastikan izin kamera sudah diberikan
+- **Browser tidak mendukung**: Gunakan Chrome/Edge versi terbaru
 
 ## 🔔 Jenis Notifikasi
 
@@ -191,48 +240,61 @@ src/
 │   ├── HomePage.jsx            # Halaman utama
 │   ├── ProductDetailPage.jsx   # Detail produk
 │   ├── NFCPage.jsx             # Scanner NFC
-│   ├── CameraPage.jsx          # Kamera & barcode
+│   ├── CameraPage.jsx          # Kamera & QR code scanning
 │   └── ProfilePage.jsx         # Profil pengguna
 ├── data/
 │   ├── products.js             # Data produk
 │   └── user.js                 # Data pengguna
 ├── utils/
 │   └── notificationUtils.js    # Utility notifikasi
-└── App.jsx                     # Komponen utama
-
-public/
-├── sw.js                       # Service Worker
-├── manifest.json               # PWA Manifest
-└── index.html                  # HTML utama
+├── public/
+│   ├── sw.js                   # Service Worker
+│   └── manifest.json           # PWA Manifest
+└── scripts/
+    └── generate-vapid-keys.js  # Script generate VAPID keys
 ```
 
-## 🌐 Browser Support
+## 🔍 Troubleshooting
 
-- **Chrome**: 42+ (Full support)
-- **Firefox**: 44+ (Full support)
-- **Safari**: 11.1+ (Limited PWA support)
-- **Edge**: 17+ (Full support)
+### QR Code tidak terdeteksi
 
-### NFC Support
+- Pastikan QR code jelas dan tidak blur
+- Coba mode **Auto** untuk scanning berkelanjutan
+- Pastikan library jsQR sudah terload (cek console)
+- Pastikan menggunakan HTTPS atau localhost
 
-- **Chrome Android**: 89+ (Web NFC API)
-- **Edge Android**: 89+ (Web NFC API)
+### Kamera tidak berfungsi
 
-## 🔒 Keamanan
+- Pastikan izin kamera sudah diberikan
+- Coba refresh halaman
+- Pastikan menggunakan HTTPS atau localhost
+- Cek apakah ada aplikasi lain yang menggunakan kamera
 
-- HTTPS required untuk PWA dan notifikasi
-- VAPID keys untuk autentikasi push
-- Service Worker untuk offline security
-- Local storage untuk data sensitif
+### Push Notifications gagal
 
-## 📈 Performance
+- Pastikan menggunakan HTTPS
+- Cek console untuk error detail
+- Pastikan VAPID keys sudah benar
+- Pastikan service worker sudah terdaftar
 
-- **Lighthouse Score**: 90+ (PWA)
-- **Bundle Size**: < 500KB
-- **First Load**: < 3s
-- **Offline Support**: Full functionality
+### NFC tidak berfungsi
 
-## 🤝 Kontribusi
+- Pastikan menggunakan Chrome di Android
+- Pastikan menggunakan HTTPS
+- Pastikan perangkat mendukung NFC
+- Pastikan NFC sudah diaktifkan di pengaturan
+
+### Multiple Camera Issues
+
+- Pastikan perangkat memiliki lebih dari satu kamera
+- Coba refresh halaman untuk mendeteksi ulang kamera
+- Pastikan tidak ada aplikasi lain yang menggunakan kamera
+
+## 📄 License
+
+MIT License - lihat file LICENSE untuk detail.
+
+## 🤝 Contributing
 
 1. Fork repository
 2. Buat feature branch
@@ -240,16 +302,9 @@ public/
 4. Push ke branch
 5. Buat Pull Request
 
-## 📄 License
-
-MIT License - lihat file LICENSE untuk detail.
-
 ## 📞 Support
 
-Untuk pertanyaan dan dukungan:
-
-- Email: support@marketplay.com
-- GitHub Issues: [Buat Issue](https://github.com/your-repo/issues)
+Untuk pertanyaan atau masalah, silakan buat issue di repository ini.
 
 ---
 

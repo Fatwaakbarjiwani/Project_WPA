@@ -12,10 +12,10 @@ import {
 import PhotoGallery from "../components/PhotoGallery";
 
 const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
-  const [scanMode, setScanMode] = useState("photo"); // "photo" or "barcode"
-  const [barcodeResult, setBarcodeResult] = useState("");
+  const [scanMode, setScanMode] = useState("photo");
+  const [qrResult, setQrResult] = useState("");
   const [scanning, setScanning] = useState(false);
-  const [cameraFacing, setCameraFacing] = useState("environment"); // "user" or "environment"
+  const [cameraFacing, setCameraFacing] = useState("environment");
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [availableCameras, setAvailableCameras] = useState([]);
@@ -23,6 +23,7 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
   const [currentStream, setCurrentStream] = useState(null);
   const [localCameraError, setLocalCameraError] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
+  const [scanInterval, setScanInterval] = useState(null);
   const fileInputRef = useRef(null);
 
   // Initialize camera system
@@ -191,18 +192,18 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
     }
   };
 
-  // Handle file input for barcode scanning
+  // Handle file input for QR code scanning
   const handleFileInput = (event) => {
     const file = event.target.files[0];
     if (file) {
-      scanBarcodeFromFile(file);
+      scanQRFromFile(file);
     }
   };
 
-  // Scan barcode from file
-  const scanBarcodeFromFile = async (file) => {
+  // Scan QR code from file
+  const scanQRFromFile = async (file) => {
     setScanning(true);
-    setBarcodeResult("");
+    setQrResult("");
 
     try {
       const canvas = document.createElement("canvas");
@@ -214,68 +215,154 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        if ("BarcodeDetector" in window) {
-          const barcodeDetector = new BarcodeDetector({
-            formats: [
-              "qr_code",
-              "ean_13",
-              "ean_8",
-              "upc_a",
-              "upc_e",
-              "code_128",
-              "code_39",
-              "pdf417",
-              "aztec",
-            ],
-          });
+        const result = await scanQRCode(canvas);
+        if (result) {
+          setQrResult(`QR Code terdeteksi: ${result}`);
 
-          const barcodes = await barcodeDetector.detect(canvas);
-
-          if (barcodes.length > 0) {
-            const result = barcodes[0].rawValue;
-            setBarcodeResult(`Barcode terdeteksi: ${result}`);
-
-            // Simulate product search
-            setTimeout(() => {
-              setBarcodeResult(
-                `Produk ditemukan: Smartphone NFC - Rp3.500.000`
-              );
-            }, 1000);
-          } else {
-            setBarcodeResult("Tidak ada barcode terdeteksi dalam gambar");
-          }
+          // Simulate product search
+          setTimeout(() => {
+            setQrResult(`Produk ditemukan: Smartphone NFC - Rp3.500.000`);
+          }, 1000);
         } else {
-          setBarcodeResult("Browser tidak mendukung Barcode Detection API");
+          setQrResult("Tidak ada QR Code terdeteksi dalam gambar");
         }
         setScanning(false);
       };
 
       img.onerror = () => {
-        setBarcodeResult("Gagal memuat gambar");
+        setQrResult("Gagal memuat gambar");
         setScanning(false);
       };
 
       img.src = URL.createObjectURL(file);
     } catch (error) {
-      setBarcodeResult("Error scanning barcode: " + error.message);
+      setQrResult("Error scanning QR code: " + error.message);
       setScanning(false);
     }
   };
 
-  // Barcode scanning function from camera
-  const handleBarcodeScan = async () => {
-    if (!("BarcodeDetector" in window)) {
-      setBarcodeResult("Browser tidak mendukung Barcode Detection API");
+  // QR Code scanning function using jsQR
+  const scanQRCode = async (canvas) => {
+    try {
+      // Use jsQR library
+      if (window.jsQR) {
+        const imageData = canvas
+          .getContext("2d")
+          .getImageData(0, 0, canvas.width, canvas.height);
+        const code = window.jsQR(
+          imageData.data,
+          imageData.width,
+          imageData.height,
+          {
+            inversionAttempts: "dontInvert",
+          }
+        );
+
+        if (code) {
+          console.log("QR Code found:", code.data);
+          return code.data;
+        }
+      }
+
+      // Fallback to BarcodeDetector API
+      if ("BarcodeDetector" in window) {
+        const barcodeDetector = new BarcodeDetector({
+          formats: ["qr_code", "qr", "aztec", "data_matrix"],
+        });
+
+        const barcodes = await barcodeDetector.detect(canvas);
+
+        if (barcodes.length > 0) {
+          console.log(
+            "QR Code found via BarcodeDetector:",
+            barcodes[0].rawValue
+          );
+          return barcodes[0].rawValue;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error scanning QR code:", error);
+      return null;
+    }
+  };
+
+  // Start continuous QR code scanning
+  const startQRScanning = () => {
+    if (!videoRef?.current || !isStreamActive || isPaused) {
+      setQrResult("Kamera tidak aktif");
       return;
     }
 
-    if (!videoRef?.current || !isStreamActive) {
-      setBarcodeResult("Kamera tidak aktif");
+    if (scanInterval) {
+      clearInterval(scanInterval);
+    }
+
+    setScanning(true);
+    setQrResult("Memulai scan QR Code...");
+
+    const interval = setInterval(async () => {
+      if (!videoRef?.current || isPaused) return;
+
+      try {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Set canvas size to video size
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+
+        // Draw video frame to canvas
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+        // Scan for QR code
+        const result = await scanQRCode(canvas);
+
+        if (result) {
+          setQrResult(`QR Code terdeteksi: ${result}`);
+          setScanning(false);
+          clearInterval(interval);
+          setScanInterval(null);
+
+          // Simulate product search
+          setTimeout(() => {
+            setQrResult(`Produk ditemukan: Smartphone NFC - Rp3.500.000`);
+          }, 1000);
+        }
+      } catch (error) {
+        console.error("Error in continuous scanning:", error);
+      }
+    }, 500); // Scan every 500ms
+
+    setScanInterval(interval);
+  };
+
+  // Stop QR code scanning
+  const stopQRScanning = () => {
+    if (scanInterval) {
+      clearInterval(scanInterval);
+      setScanInterval(null);
+    }
+    setScanning(false);
+  };
+
+  // Manual QR code scan
+  const handleQRScan = async () => {
+    if (!window.jsQR && !("BarcodeDetector" in window)) {
+      setQrResult(
+        "Browser tidak mendukung QR Code scanning. Silakan refresh halaman."
+      );
+      return;
+    }
+
+    if (!videoRef?.current || !isStreamActive || isPaused) {
+      setQrResult("Kamera tidak aktif");
       return;
     }
 
     setScanning(true);
-    setBarcodeResult("");
+    setQrResult("");
 
     try {
       const canvas = document.createElement("canvas");
@@ -284,35 +371,20 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
       canvas.height = videoRef.current.videoHeight;
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-      const barcodeDetector = new BarcodeDetector({
-        formats: [
-          "qr_code",
-          "ean_13",
-          "ean_8",
-          "upc_a",
-          "upc_e",
-          "code_128",
-          "code_39",
-          "pdf417",
-          "aztec",
-        ],
-      });
+      const result = await scanQRCode(canvas);
 
-      const barcodes = await barcodeDetector.detect(canvas);
-
-      if (barcodes.length > 0) {
-        const result = barcodes[0].rawValue;
-        setBarcodeResult(`Barcode terdeteksi: ${result}`);
+      if (result) {
+        setQrResult(`QR Code terdeteksi: ${result}`);
 
         // Simulate product search
         setTimeout(() => {
-          setBarcodeResult(`Produk ditemukan: Smartphone NFC - Rp3.500.000`);
+          setQrResult(`Produk ditemukan: Smartphone NFC - Rp3.500.000`);
         }, 1000);
       } else {
-        setBarcodeResult("Tidak ada barcode terdeteksi");
+        setQrResult("Tidak ada QR Code terdeteksi");
       }
     } catch (error) {
-      setBarcodeResult("Error scanning barcode: " + error.message);
+      setQrResult("Error scanning QR code: " + error.message);
     } finally {
       setScanning(false);
     }
@@ -331,8 +403,11 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
       if (currentStream) {
         currentStream.getTracks().forEach((track) => track.stop());
       }
+      if (scanInterval) {
+        clearInterval(scanInterval);
+      }
     };
-  }, [currentStream]);
+  }, [currentStream, scanInterval]);
 
   // Use local error or prop error
   const displayError = localCameraError || cameraError;
@@ -418,7 +493,7 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
             }`}
           >
             <QrCodeIcon className="w-4 h-4" />
-            Barcode
+            QR Code
           </button>
         </div>
       </div>
@@ -448,13 +523,13 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
               className="w-full h-full object-cover"
             />
 
-            {/* Scan overlay for barcode mode */}
+            {/* Scan overlay for QR code mode */}
             {scanMode === "barcode" && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-64 h-64 border-2 border-orange-500 rounded-lg relative">
                   <div className="absolute inset-0 border-2 border-orange-500 rounded-lg animate-pulse"></div>
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-orange-500 text-sm font-medium">
-                    Arahkan ke barcode
+                    Arahkan ke QR Code
                   </div>
                 </div>
               </div>
@@ -492,7 +567,7 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* File input for barcode */}
+            {/* File input for QR code */}
             <div className="flex gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -510,18 +585,38 @@ const CameraPage = ({ onBack, onTakePhoto, photos, videoRef, cameraError }) => {
               />
             </div>
 
-            <button
-              onClick={handleBarcodeScan}
-              disabled={scanning || !isStreamActive || isPaused}
-              className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <QrCodeIcon className="w-5 h-5" />
-              {scanning ? "Scanning..." : "Scan Barcode"}
-            </button>
+            {/* QR Code scanning buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleQRScan}
+                disabled={scanning || !isStreamActive || isPaused}
+                className="flex-1 bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <QrCodeIcon className="w-5 h-5" />
+                {scanning ? "Scanning..." : "Scan QR Code"}
+              </button>
 
-            {barcodeResult && (
+              {!scanInterval ? (
+                <button
+                  onClick={startQRScanning}
+                  disabled={!isStreamActive || isPaused}
+                  className="bg-green-500 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-600 transition disabled:opacity-50"
+                >
+                  Auto
+                </button>
+              ) : (
+                <button
+                  onClick={stopQRScanning}
+                  className="bg-red-500 text-white px-4 py-3 rounded-lg font-medium hover:bg-red-600 transition"
+                >
+                  Stop
+                </button>
+              )}
+            </div>
+
+            {qrResult && (
               <div className="bg-gray-800 text-white p-3 rounded-lg text-sm">
-                {barcodeResult}
+                {qrResult}
               </div>
             )}
           </div>

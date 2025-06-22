@@ -253,7 +253,7 @@ function App() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen flex flex-col max-w-sm mx-auto rounded-lg shadow-lg overflow-hidden border border-gray-200">
+    <div className="bg-gray-100 pb-20 min-h-screen flex flex-col max-w-sm mx-auto rounded-lg shadow-lg overflow-hidden border border-gray-200">
       <Header
         title="MarketPlay"
         onSearch={handleSearch}
