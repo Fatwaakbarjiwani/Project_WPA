@@ -40,6 +40,7 @@ self.addEventListener("push", (event) => {
     tag: "marketplay-notification",
     data: {
       url: "/",
+      timestamp: Date.now()
     },
   };
 
@@ -76,6 +77,7 @@ self.addEventListener("push", (event) => {
       ],
       requireInteraction: true,
       vibrate: [200, 100, 200],
+      silent: false
     })
   );
 });
@@ -90,18 +92,50 @@ self.addEventListener("notificationclick", (event) => {
     return;
   }
 
+  // Handle different notification types
+  const notificationData = event.notification.data;
+  let targetUrl = "/";
+
+  if (notificationData) {
+    switch (notificationData.type) {
+      case "new_product":
+        targetUrl = `/?page=product&id=${notificationData.productId}`;
+        break;
+      case "flash_sale":
+        targetUrl = "/?page=home&tab=flash_sale";
+        break;
+      case "order_update":
+        targetUrl = "/?page=profile&tab=orders";
+        break;
+      case "app_update":
+        targetUrl = "/?page=profile&tab=updates";
+        break;
+      default:
+        targetUrl = notificationData.url || "/";
+    }
+  }
+
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
+    clients.matchAll({ 
+      type: "window",
+      includeUncontrolled: true 
+    }).then((clientList) => {
       // Check if app is already open
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          return client.focus();
+        if (client.url.includes(self.location.origin)) {
+          // Focus existing window and navigate
+          client.focus();
+          client.postMessage({
+            type: "NAVIGATE",
+            url: targetUrl
+          });
+          return;
         }
       }
-
-      // Open app if not already open
+      
+      // Open new window if app is not open
       if (clients.openWindow) {
-        return clients.openWindow(event.notification.data?.url || "/");
+        return clients.openWindow(targetUrl);
       }
     })
   );
@@ -131,7 +165,9 @@ async function checkForNewProducts() {
         tag: "new-products",
         data: {
           url: "/",
+          type: "new_product",
           products: newProducts,
+          timestamp: Date.now()
         },
         actions: [
           {
@@ -172,7 +208,9 @@ async function checkForUpdates() {
         tag: "app-update",
         data: {
           url: "/",
+          type: "app_update",
           version: updates.version,
+          timestamp: Date.now()
         },
         actions: [
           {
@@ -188,3 +226,12 @@ async function checkForUpdates() {
     console.error("Error checking for updates:", error);
   }
 }
+
+// Handle messages from main thread
+self.addEventListener("message", (event) => {
+  console.log("Service Worker received message:", event.data);
+  
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});

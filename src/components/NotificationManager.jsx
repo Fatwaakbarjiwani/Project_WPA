@@ -6,6 +6,7 @@ const NotificationManager = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     checkNotificationSupport();
@@ -24,22 +25,26 @@ const NotificationManager = () => {
 
   const requestPermission = async () => {
     if (!isSupported) {
-      alert("Browser Anda tidak mendukung notifikasi push");
+      setError("Browser Anda tidak mendukung notifikasi push");
       return;
     }
 
     setIsLoading(true);
+    setError("");
+    
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-
+      
       if (result === "granted") {
         await registerServiceWorker();
         await subscribeToPush();
+      } else if (result === "denied") {
+        setError("Izin notifikasi ditolak. Silakan aktifkan di pengaturan browser.");
       }
     } catch (error) {
       console.error("Error requesting notification permission:", error);
-      alert("Gagal mengaktifkan notifikasi");
+      setError("Gagal mengaktifkan notifikasi: " + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -52,31 +57,46 @@ const NotificationManager = () => {
       return registration;
     } catch (error) {
       console.error("Service Worker registration failed:", error);
-      throw error;
+      throw new Error("Gagal mendaftarkan Service Worker");
     }
   };
 
   const subscribeToPush = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
-
+      
+      // Check if already subscribed
+      const existingSubscription = await registration.pushManager.getSubscription();
+      if (existingSubscription) {
+        setSubscription(existingSubscription);
+        console.log("Already subscribed to push notifications");
+        return;
+      }
+      
       // Generate VAPID keys (you should generate these on your server)
+      // This is a sample key - replace with your actual VAPID public key
       const vapidPublicKey = "BEl62iUYgUivxIkv69yViEuiBIa1HlVbB8y8ewBwzKk";
-
+      
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
       });
 
       setSubscription(subscription);
-
+      
       // Send subscription to server
       await sendSubscriptionToServer(subscription);
-
+      
       console.log("Push subscription created:", subscription);
     } catch (error) {
       console.error("Error subscribing to push:", error);
-      throw error;
+      if (error.name === "NotAllowedError") {
+        throw new Error("Izin notifikasi ditolak");
+      } else if (error.name === "NotSupportedError") {
+        throw new Error("Browser tidak mendukung push notifications");
+      } else {
+        throw new Error("Gagal berlangganan notifikasi: " + error.message);
+      }
     }
   };
 
@@ -84,7 +104,7 @@ const NotificationManager = () => {
     try {
       // Simulate sending subscription to server
       console.log("Sending subscription to server:", subscription);
-
+      
       // In real app, you would send this to your backend
       // await fetch('/api/push/subscribe', {
       //   method: 'POST',
@@ -93,6 +113,7 @@ const NotificationManager = () => {
       // });
     } catch (error) {
       console.error("Error sending subscription to server:", error);
+      // Don't throw error here as subscription is still valid locally
     }
   };
 
@@ -105,6 +126,7 @@ const NotificationManager = () => {
       }
     } catch (error) {
       console.error("Error unsubscribing from push:", error);
+      setError("Gagal berhenti berlangganan: " + error.message);
     }
   };
 
@@ -125,7 +147,7 @@ const NotificationManager = () => {
 
   const sendTestNotification = async () => {
     if (permission !== "granted") {
-      alert("Izin notifikasi belum diberikan");
+      setError("Izin notifikasi belum diberikan");
       return;
     }
 
@@ -141,12 +163,18 @@ const NotificationManager = () => {
           {
             action: "view",
             title: "Lihat",
-            icon: "/vite.svg",
-          },
+            icon: "/vite.svg"
+          }
         ],
+        data: {
+          url: "/",
+          type: "test",
+          timestamp: Date.now()
+        }
       });
     } catch (error) {
       console.error("Error sending test notification:", error);
+      setError("Gagal mengirim notifikasi test: " + error.message);
     }
   };
 
@@ -195,6 +223,12 @@ const NotificationManager = () => {
         </span>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
+
       <div className="space-y-3">
         {permission === "default" && (
           <button
@@ -215,7 +249,7 @@ const NotificationManager = () => {
             >
               Kirim Notifikasi Test
             </button>
-
+            
             <button
               onClick={unsubscribeFromPush}
               className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-600 transition"

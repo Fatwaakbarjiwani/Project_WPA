@@ -67,6 +67,50 @@ function App() {
     }
   }, []);
 
+  // Handle service worker messages
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        console.log("Received message from service worker:", event.data);
+
+        if (event.data && event.data.type === "NAVIGATE") {
+          handleNavigationFromNotification(event.data.url);
+        }
+      });
+    }
+  }, []);
+
+  // Handle navigation from notification
+  const handleNavigationFromNotification = (url) => {
+    try {
+      const urlObj = new URL(url, window.location.origin);
+      const params = new URLSearchParams(urlObj.search);
+
+      const targetPage = params.get("page");
+      const productId = params.get("id");
+      const tab = params.get("tab");
+
+      if (targetPage === "product" && productId) {
+        const product = productsData.find((p) => p.id === parseInt(productId));
+        if (product) {
+          setSelectedProduct(product);
+          setPage("product");
+        }
+      } else if (targetPage === "home") {
+        setPage("home");
+        // Handle tab if needed
+      } else if (targetPage === "profile") {
+        setPage("profile");
+        // Handle tab if needed
+      } else {
+        setPage("home");
+      }
+    } catch (error) {
+      console.error("Error handling navigation from notification:", error);
+      setPage("home");
+    }
+  };
+
   // Kamera: Mulai stream saat masuk halaman kamera
   useEffect(() => {
     if (page === "camera" && videoRef.current) {
